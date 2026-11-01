@@ -1,0 +1,149 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:EvePreview.App.ViewModels"
+                    xmlns:controls="clr-namespace:EvePreview.App.Controls"
+                    xmlns:behaviors="clr-namespace:EvePreview.App.Behaviors">
+    <DataTemplate DataType="{x:Type vm:SystemSettingsViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,-14,0">
+            <StackPanel>
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="常规"
+                                         Icon="{StaticResource SystemIconGeometry}" SectionCode="GENERAL / 01">
+                    <StackPanel>
+                        <StackPanel Width="300" HorizontalAlignment="Left">
+                            <TextBlock Text="界面语言" />
+                            <ComboBox ToolTip="{Binding Source=选择界面语言；切换后立即更新界面文字。, Converter={StaticResource LocalizationConverter}}" Width="150" HorizontalAlignment="Left"
+                                      SelectedValuePath="Content" SelectedValue="{Binding Language}" Margin="0,3,0,0">
+                                <ComboBoxItem Content="简体中文" /><ComboBoxItem Content="English" />
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox ToolTip="{Binding Source=开启后最小化主窗口时隐藏到系统托盘。, Converter={StaticResource LocalizationConverter}}" Content="最小化主窗口到托盘" IsChecked="{Binding MinimizeToTray}" />
+                        <CheckBox ToolTip="{Binding Source=开启后关闭主窗口时隐藏到托盘；关闭后则直接退出程序。, Converter={StaticResource LocalizationConverter}}" Content="关闭主窗口时最小化到托盘（取消则退出）" IsChecked="{Binding CloseToTray}" />
+                        <CheckBox ToolTip="{Binding Source=开启后自动最小化非活动 EVE 客户端窗口。, Converter={StaticResource LocalizationConverter}}" Content="自动最小化非活动客户端" IsChecked="{Binding MinimizeInactiveClients}" />
+                        <CheckBox ToolTip="{Binding Source=开启后保留 Windows 窗口动画；关闭后操作客户端时临时禁用动画。, Converter={StaticResource LocalizationConverter}}" Content="使用 Windows 窗口动画" IsChecked="{Binding EnableWindowAnimations}" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="20,2,0,0"
+                                   Text="取消勾选后，切换、最小化或还原客户端时临时禁用系统窗口动画，操作完成后自动恢复。" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="全局操作"
+                                         Icon="{StaticResource KeyboardIconGeometry}" SectionCode="GLOBAL HOTKEYS"
+                                         DataContext="{Binding DataContext.Hotkeys, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="1.5*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最小化全部客户端" Style="{StaticResource FieldLabelTextStyle}" />
+                            <TextBox ToolTip="{Binding Source=录制最小化全部客户端的全局热键；Esc 恢复原值。, Converter={StaticResource LocalizationConverter}}" Grid.Column="1" Text="{Binding MinimizeAllHotkey, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="{StaticResource MonospaceFontFamily}"
+                                     behaviors:HotkeyRecorder.IsEnabled="True" />
+                            <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center" Text="默认 Ctrl+Shift+M" />
+                        </Grid>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="1.5*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="刷新最小化客户端" Style="{StaticResource FieldLabelTextStyle}" />
+                            <TextBox ToolTip="{Binding Source=录制刷新最小化客户端的全局热键；Esc 恢复原值。, Converter={StaticResource LocalizationConverter}}" Grid.Column="1" Text="{Binding RefreshMinimizedHotkey, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="{StaticResource MonospaceFontFamily}"
+                                     behaviors:HotkeyRecorder.IsEnabled="True" />
+                            <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center" Text="默认 Ctrl+Shift+R" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.2*" />
+                                <ColumnDefinition Width="1.5*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="返回此前外部应用" Style="{StaticResource FieldLabelTextStyle}" />
+                            <TextBox ToolTip="{Binding Source=录制返回此前外部应用的全局热键；留空禁用。, Converter={StaticResource LocalizationConverter}}" Grid.Column="1" Text="{Binding ReturnToPreviousHotkey, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="{StaticResource MonospaceFontFamily}"
+                                     behaviors:HotkeyRecorder.IsEnabled="True" />
+                            <TextBlock Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource CaptionTextStyle}"
+                                       VerticalAlignment="Center" Text="留空则禁用此操作" />
+                        </Grid>
+                        <TextBlock Text="{Binding ConflictText}" Style="{StaticResource ErrorTextStyle}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding DuplicateText}" Style="{StaticResource ErrorTextStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="监控与渲染"
+                                         Icon="{StaticResource MonitorIconGeometry}" SectionCode="PROCESS MONITOR">
+                    <StackPanel>
+                        <TextBlock Text="可执行文件名（用逗号分隔）" />
+                        <Grid Margin="0,3,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox ToolTip="{Binding Source=要监控的客户端进程名，使用逗号分隔；回车或失焦应用。, Converter={StaticResource LocalizationConverter}}" Text="{Binding ExecutableNames, UpdateSourceTrigger=Explicit}" behaviors:CommitOnEnterOrLostFocus.IsEnabled="True" />
+                        </Grid>
+                        <TextBlock Text="进程轮询周期（100–2000 毫秒）" />
+                        <TextBox ToolTip="{Binding Source=客户端进程检测间隔，范围 100–2000 毫秒。, Converter={StaticResource LocalizationConverter}}" Width="180" HorizontalAlignment="Left" Margin="0,3,0,0"
+                                 Text="{Binding PollingIntervalMilliseconds, UpdateSourceTrigger=Explicit}" behaviors:CommitOnEnterOrLostFocus.IsEnabled="True" />
+                        <TextBlock Text="{Binding PollingIntervalError}" Style="{StaticResource ErrorTextStyle}" />
+                        <CheckBox ToolTip="{Binding Source=开启后使用约 1 FPS 的 GDI 兼容预览，仅在 DWM 不可用时需要。, Converter={StaticResource LocalizationConverter}}" Content="使用 GDI 兼容模式（DWM 不可用时回退，约 1 FPS）"
+                                  IsChecked="{Binding UseCompatibilityMode}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding RenderingModeText}" Style="{StaticResource CaptionTextStyle}" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="配置文件"
+                                         Icon="{StaticResource FolderIconGeometry}" SectionCode="CONFIGURATION">
+                    <StackPanel>
+                        <TextBlock Text="当前配置文件" Style="{StaticResource CaptionTextStyle}" />
+                        <TextBlock Text="{Binding CurrentProfileName}" FontFamily="{StaticResource MonospaceFontFamily}"
+                                   Margin="0,3,0,6" />
+                        <TextBlock Text="可用配置文件" Style="{StaticResource CaptionTextStyle}" />
+                        <Grid Margin="0,3,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox ToolTip="{Binding Source=选择要切换的配置文件；切换前会保存当前设置。, Converter={StaticResource LocalizationConverter}}" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" />
+                        </Grid>
+                        <WrapPanel>
+                            <Button ToolTip="{Binding Source=保存当前设置，切换配置文件并重启应用。, Converter={StaticResource LocalizationConverter}}" Content="切换并重启" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding SwitchProfileCommand}" />
+                            <Button ToolTip="{Binding Source=丢弃未保存修改并重新加载当前配置文件。, Converter={StaticResource LocalizationConverter}}" Content="重载" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding ReloadProfileCommand}" />
+                            <Button ToolTip="{Binding Source=恢复到最后一次成功保存的配置。, Converter={StaticResource LocalizationConverter}}" Content="取消未保存修改" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding DataContext.DiscardUnsavedChangesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    IsEnabled="{Binding DataContext.CanDiscardUnsavedChanges, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            <Button ToolTip="{Binding Source=将当前配置另存为新文件。, Converter={StaticResource LocalizationConverter}}" Content="另存为" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SaveProfileAsCommand}" />
+                            <Button ToolTip="{Binding Source=导入旧版配置文件。, Converter={StaticResource LocalizationConverter}}" Content="导入旧版配置" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding ImportLegacyProfileCommand}" />
+                            <Button ToolTip="{Binding Source=在文件资源管理器中打开配置目录。, Converter={StaticResource LocalizationConverter}}" Content="打开目录" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding OpenProfileFolderCommand}" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding ProfileStatusText}" Style="{StaticResource CaptionTextStyle}"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="诊断"
+                                         Icon="{StaticResource PulseIconGeometry}" SectionCode="DIAGNOSTICS">
+                    <StackPanel>
+                        <TextBlock Text="{Binding DiagnosticSummary}" Style="{StaticResource WarningStatusTextStyle}" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="关于 EVE-Preview"
+                                         Icon="{StaticResource OverviewIconGeometry}" SectionCode="APPLICATION">
+                    <StackPanel>
+                        <TextBlock Text="Windows x64 · .NET 10 · PerMonitorV2" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0"
+                                   Text="多客户端原始预览与窗口切换工具。仅显示未经修改的画面，不注入、不广播输入、不执行游戏自动化。" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

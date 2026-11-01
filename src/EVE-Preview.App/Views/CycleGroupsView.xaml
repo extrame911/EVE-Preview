@@ -1,0 +1,268 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:EvePreview.App.ViewModels"
+                    xmlns:controls="clr-namespace:EvePreview.App.Controls"
+                    xmlns:behaviors="clr-namespace:EvePreview.App.Behaviors">
+    <DataTemplate DataType="{x:Type vm:CycleGroupsViewModel}">
+        <Grid x:Name="CycleGroupsRoot">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="142" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ListBox ItemsSource="{Binding Groups}"
+                     SelectedItem="{Binding SelectedGroup}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Height" Value="38" />
+                        <Setter Property="MinHeight" Value="38" />
+                        <Setter Property="Margin" Value="3,3" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Foreground" Value="{StaticResource SecondaryBrush}" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="AutomationProperties.Name" Value="{Binding TitleText}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="ItemBorder"
+                                            Background="#5C101E29"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="{StaticResource SmallRadius}"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#122632" />
+                                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background"
+                                                    Value="{StaticResource NavigationActiveGradientBrush}" />
+                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#2A4C5A" />
+                                            <Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Height="36">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding DisplayText}" Margin="10,0,4,0"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ClientCountText}" Margin="0,0,10,0"
+                                       VerticalAlignment="Center" FontFamily="{StaticResource MonospaceFontFamily}"
+                                       FontSize="10" Foreground="{StaticResource FaintBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Opacity" Value="1" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                <Setter Property="Opacity" Value="0" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                <Setter Property="Opacity" Value="0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Button Grid.Column="1"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,1,2,0"
+                                    Panel.ZIndex="1"
+                                    ToolTip="{Binding Source=删除循环组, Converter={StaticResource LocalizationConverter}}"
+                                    AutomationProperties.Name="{Binding Source=删除循环组, Converter={StaticResource LocalizationConverter}}"
+                                    Command="{Binding DataContext.RemoveGroupCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                    CommandParameter="{Binding}"
+                                    IsEnabled="{Binding DataContext.CanRemoveSelectedGroup, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GroupDeleteButtonStyle}">
+                                        <Setter Property="Opacity" Value="0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                <Setter Property="Opacity" Value="0.72" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                <Setter Property="Opacity" Value="0.72" />
+                                            </DataTrigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Opacity" Value="0.85" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Button ToolTip="{Binding Source=新增一个空循环组并选中。, Converter={StaticResource LocalizationConverter}}" Grid.Row="1" Height="38" MinWidth="0" Margin="4,6,4,3" Padding="10,0"
+                    HorizontalContentAlignment="Left" Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding AddGroupCommand}"
+                    AutomationProperties.Name="{Binding Source=新建循环组, Converter={StaticResource LocalizationConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource PlusIconGeometry}" Style="{StaticResource IconPathStyle}"
+                          Stroke="{StaticResource SecondaryBrush}" Width="12" Height="12" Margin="0,0,7,0" />
+                    <TextBlock Text="新建循环组" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+            <controls:CutCornerPanel Grid.Column="2" Style="{StaticResource CardStyle}" Margin="0"
+                                     Header="{Binding SelectedGroup.DisplayText}"
+                                     Icon="{StaticResource CycleIconGeometry}" SectionCode="ORDERED CYCLE">
+                <Grid DataContext="{Binding SelectedGroup}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="从上到下循环热键" />
+                                <TextBox ToolTip="{Binding Source=录制当前循环组从上到下切换的全局热键；Esc 恢复原值。, Converter={StaticResource LocalizationConverter}}" Text="{Binding ForwardHotkey, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,0"
+                                         FontFamily="{StaticResource MonospaceFontFamily}"
+                                         behaviors:HotkeyRecorder.IsEnabled="True" />
+                                <TextBlock Text="例如 Ctrl+Shift+F4；不支持鼠标按键" Style="{StaticResource CaptionTextStyle}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="从下到上循环按键" />
+                                <TextBox ToolTip="{Binding Source=录制当前循环组从下到上切换的全局热键；Esc 恢复原值。, Converter={StaticResource LocalizationConverter}}" Text="{Binding BackwardHotkey, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,0"
+                                         FontFamily="{StaticResource MonospaceFontFamily}"
+                                         behaviors:HotkeyRecorder.IsEnabled="True" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="{Binding DataContext.Hotkeys.DuplicateText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Style="{StaticResource ErrorTextStyle}" TextWrapping="Wrap" />
+                        <Grid Margin="0,14,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="有序客户端列表" VerticalAlignment="Center" />
+                            <Button ToolTip="{Binding Source=打开客户端选择窗口，把客户端加入当前循环组。, Converter={StaticResource LocalizationConverter}}" x:Name="AddCandidateButton" Grid.Column="1" Content="新增"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding DataContext.OpenCandidatePickerCommand, ElementName=CycleGroupsRoot}" />
+                        </Grid>
+                        <Popup x:Name="CandidatePopup"
+                               DataContext="{Binding DataContext, ElementName=CycleGroupsRoot}"
+                               PlacementTarget="{Binding ElementName=AddCandidateButton}"
+                               IsOpen="{Binding IsCandidatePickerOpen, Mode=TwoWay}"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               Placement="Bottom">
+                            <Border Background="{StaticResource SurfaceRaisedBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource SmallRadius}"
+                                    Padding="6">
+                                <StackPanel Width="300">
+                                    <TextBlock Text="选择客户端" Margin="0,0,0,6" />
+                                    <ListBox ItemsSource="{Binding Candidates}"
+                                             SelectedItem="{Binding SelectedCandidate, Mode=TwoWay}"
+                                             Padding="4" MaxHeight="320">
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                                <Setter Property="Padding" Value="6,2" />
+                                                <Setter Property="MinHeight" Value="24" />
+                                                <Setter Property="Margin" Value="0,4,0,4" />
+                                                <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}" />
+                                            </Style>
+                                        </ListBox.ItemContainerStyle>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                        <Button ToolTip="{Binding Source=把选中的客户端加入当前循环组。, Converter={StaticResource LocalizationConverter}}" Content="添加" Style="{StaticResource SecondaryButtonStyle}"
+                                                Command="{Binding AddCandidateCommand}" />
+                                        <Button ToolTip="{Binding Source=关闭客户端选择窗口，不修改当前循环组。, Converter={StaticResource LocalizationConverter}}" Content="取消" Style="{StaticResource SecondaryButtonStyle}" Margin="0"
+                                                Command="{Binding CloseCandidatePickerCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </StackPanel>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Clients}"
+                             BorderThickness="1" HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding DisplayName}" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                                    <Button ToolTip="{Binding Source=将此客户端在循环顺序中上移。, Converter={StaticResource LocalizationConverter}}" Grid.Column="1" Content="上移"
+                                            Width="40" MinWidth="0" Padding="0" Margin="3,0,0,0"
+                                            Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanMoveUp}" Value="False">
+                                                        <Setter Property="Visibility" Value="Hidden" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button ToolTip="{Binding Source=从当前循环组移除此客户端。, Converter={StaticResource LocalizationConverter}}" Grid.Column="2" Content="删除" Style="{StaticResource SecondaryButtonStyle}"
+                                            Width="40" MinWidth="0" Padding="0" Margin="3,0,0,0"
+                                            Command="{Binding DataContext.RemoveClientCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button ToolTip="{Binding Source=将此客户端在循环顺序中下移。, Converter={StaticResource LocalizationConverter}}" Grid.Column="3" Content="下移"
+                                            Width="40" MinWidth="0" Padding="0" Margin="3,0,0,0"
+                                            Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanMoveDown}" Value="False">
+                                                        <Setter Property="Visibility" Value="Hidden" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </controls:CutCornerPanel>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

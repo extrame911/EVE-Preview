@@ -1,0 +1,134 @@
+﻿<Window x:Class="EvePreview.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:vm="clr-namespace:EvePreview.App.ViewModels"
+        xmlns:controls="clr-namespace:EvePreview.App.Controls"
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+        Title="EVE-Preview" Width="780" Height="538" MinWidth="780" MinHeight="538"
+        Icon="pack://application:,,,/EVE-Preview;component/Assets/EVE-Preview.ico" WindowStyle="None" ResizeMode="CanResize"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="{StaticResource AppFontFamily}" FontSize="14"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True" SnapsToDevicePixels="True"
+        WindowStartupLocation="CenterScreen">
+    <WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="48" ResizeBorderThickness="6" GlassFrameThickness="0"
+                            CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="OverviewNavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}">
+            <Style.Triggers><DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static vm:AppPage.Overview}"><Setter Property="controls:NavigationButtonProperties.IsCurrent" Value="True" /><Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="ThumbnailNavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}">
+            <Style.Triggers><DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static vm:AppPage.Thumbnails}"><Setter Property="controls:NavigationButtonProperties.IsCurrent" Value="True" /><Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="ClientsNavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}">
+            <Style.Triggers><DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static vm:AppPage.Clients}"><Setter Property="controls:NavigationButtonProperties.IsCurrent" Value="True" /><Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="CycleNavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}">
+            <Style.Triggers><DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static vm:AppPage.CycleGroups}"><Setter Property="controls:NavigationButtonProperties.IsCurrent" Value="True" /><Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="SystemNavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}">
+            <Style.Triggers><DataTrigger Binding="{Binding CurrentPage}" Value="{x:Static vm:AppPage.System}"><Setter Property="controls:NavigationButtonProperties.IsCurrent" Value="True" /><Setter Property="Foreground" Value="{StaticResource NavigationActiveTextBrush}" /></DataTrigger></Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="48" /><RowDefinition Height="*" /><RowDefinition Height="27" /></Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="{StaticResource TitleBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="18,0,0,0" VerticalAlignment="Center">
+                        <Grid Width="35" Height="35">
+                            <Border Width="35" Height="35" BorderBrush="#1F63D8E8" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform><RotateTransform Angle="45" /></Border.RenderTransform>
+                            </Border>
+                            <Path Data="{StaticResource LogoIconGeometry}" Style="{StaticResource IconPathStyle}"
+                                  Stroke="{StaticResource PrimaryBrush}" Width="24" Height="24" StrokeThickness="1.6" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="EVE—PREVIEW" Style="{StaticResource TitleBarBrandTextStyle}" TextWrapping="NoWrap" />
+                            <TextBlock x:Name="BrandSubtitle" Text="MULTI-CLIENT WINDOW CONTROL" FontSize="11"
+                                       Foreground="{StaticResource FaintBrush}" Margin="10,0,0,1"
+                                       VerticalAlignment="Bottom" TextWrapping="NoWrap" Visibility="Collapsed" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Border Grid.Column="0" Width="164" Height="1" HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="{StaticResource PrimaryBrush}" Opacity="0.5" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Stretch">
+                        <Button Style="{StaticResource TitleBarButtonStyle}" ToolTip="{Binding Source=最小化, Converter={StaticResource LocalizationConverter}}"
+                                AutomationProperties.Name="{Binding Source=最小化, Converter={StaticResource LocalizationConverter}}"
+                                Click="OnMinimizeClick" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Path Data="{StaticResource MinimizeIconGeometry}" Style="{StaticResource IconPathStyle}" Width="14" Height="14" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                        <Button Style="{StaticResource TitleBarCloseButtonStyle}" ToolTip="{Binding Source=关闭, Converter={StaticResource LocalizationConverter}}"
+                                AutomationProperties.Name="{Binding Source=关闭, Converter={StaticResource LocalizationConverter}}"
+                                Click="OnCloseClick" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Path Data="{StaticResource CloseIconGeometry}" Style="{StaticResource IconPathStyle}" Width="14" Height="14" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="164" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource SidebarBorderBrush}" BorderThickness="0,0,1,0">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <StackPanel VerticalAlignment="Top">
+                            <TextBlock Text="CONTROL DECK" Margin="19,20,0,8" FontFamily="{StaticResource EveDisplayFontFamily}" FontSize="11" Foreground="{StaticResource FaintBrush}" TextWrapping="NoWrap" />
+                            <Button ToolTip="{Binding Source=打开总览页，查看运行状态和快捷操作。, Converter={StaticResource LocalizationConverter}}" Content="总览" Tag="{StaticResource OverviewIconGeometry}" controls:NavigationButtonProperties.Index="01" Style="{StaticResource OverviewNavigationButtonStyle}" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Overview}" />
+                            <Button ToolTip="{Binding Source=打开缩略图页，设置尺寸、可见性、缩放、名称叠加和吸附。, Converter={StaticResource LocalizationConverter}}" Content="缩略图" Tag="{StaticResource ThumbnailIconGeometry}" controls:NavigationButtonProperties.Index="02" Style="{StaticResource ThumbnailNavigationButtonStyle}" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Thumbnails}" />
+                            <Button ToolTip="{Binding Source=打开客户端页，管理各客户端的别名、热键和独立设置。, Converter={StaticResource LocalizationConverter}}" Content="客户端" Tag="{StaticResource ClientIconGeometry}" controls:NavigationButtonProperties.Index="03" Style="{StaticResource ClientsNavigationButtonStyle}" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.Clients}" />
+                            <Button ToolTip="{Binding Source=打开循环组页，编辑组的顺序、热键和成员。, Converter={StaticResource LocalizationConverter}}" Content="循环组" Tag="{StaticResource CycleIconGeometry}" controls:NavigationButtonProperties.Index="04" Style="{StaticResource CycleNavigationButtonStyle}" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.CycleGroups}" />
+                            <Button ToolTip="{Binding Source=打开系统页，设置语言、托盘、全局热键、监控和配置文件。, Converter={StaticResource LocalizationConverter}}" Content="系统" Tag="{StaticResource SystemIconGeometry}" controls:NavigationButtonProperties.Index="05" Style="{StaticResource SystemNavigationButtonStyle}" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:AppPage.System}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Bottom" Margin="19,0,19,20">
+                            <Border BorderBrush="{StaticResource SidebarBorderBrush}" BorderThickness="0,1,0,0" Padding="0,17,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="WINDOW OPERATIONS" Foreground="{StaticResource FaintBrush}" FontSize="11" TextWrapping="NoWrap" />
+                                    <TextBlock Text="LOCAL PROCESS" Foreground="#78909E" FontSize="11" Margin="0,12,0,0" TextWrapping="NoWrap" />
+                                    <TextBlock Text="DWM COMPOSITION" Foreground="#78909E" FontSize="11" Margin="0,7,0,0" TextWrapping="NoWrap" />
+                                    <TextBlock Text="WINDOW CONTROL ONLY" Foreground="#78909E" FontSize="11" Margin="0,7,0,0" TextWrapping="NoWrap" />
+                                    <TextBlock Margin="0,14,0,0" FontSize="11" Foreground="#78909E" TextWrapping="Wrap">
+                                        <Hyperlink NavigateUri="https://github.com/extrame911/EVE-Preview"
+                                                   RequestNavigate="OnProjectLinkRequested"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   ToolTip="{Binding Source=在默认浏览器中打开 EVE-Preview 的 GitHub 仓库。, Converter={StaticResource LocalizationConverter}}"
+                                                   AutomationProperties.Name="{Binding Source=在默认浏览器中打开 EVE-Preview 的 GitHub 仓库。, Converter={StaticResource LocalizationConverter}}">https://github.com/extrame911/EVE-Preview</Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Grid Grid.Column="1" ClipToBounds="True">
+                    <Image Source="pack://application:,,,/Assets/DeepSpaceBackground.png" Stretch="UniformToFill" Opacity="1" IsHitTestVisible="False" />
+                    <Rectangle Fill="{StaticResource BackgroundShadeBrush}" IsHitTestVisible="False" />
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="39" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <Grid Margin="16,0,16,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock x:Name="PageContextText" Text="01 / OVERVIEW" FontSize="12" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                            <Border Grid.Column="1" Height="1" Margin="12,0" VerticalAlignment="Center" Background="{StaticResource ContentLineBrush}" />
+                            <TextBlock Grid.Column="2" Text="CONTROL SURFACE" FontSize="11" Foreground="{StaticResource FaintBrush}" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                        </Grid>
+                        <ContentControl Grid.Row="1" Content="{Binding CurrentPageViewModel}" Margin="16,0,16,16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Focusable="False" />
+                    </Grid>
+                </Grid>
+            </Grid>
+            <Border Grid.Row="2" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource StatusBarBorderBrush}" BorderThickness="0,1,0,0" Padding="16,0">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="5" Height="5" CornerRadius="3" Margin="0,0,7,0" VerticalAlignment="Center" Background="{StaticResource SuccessBrush}" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" Text="客户端：" TextWrapping="NoWrap" /><TextBlock Style="{StaticResource CaptionTextStyle}" Text="{Binding Overview.ClientCount}" TextWrapping="NoWrap" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" Text="  |  活动：" TextWrapping="NoWrap" /><TextBlock Style="{StaticResource CaptionTextStyle}" Text="{Binding Overview.ActiveClientText}" TextWrapping="NoWrap" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Margin="16,0" Style="{StaticResource CaptionTextStyle}" Text="{Binding LastError}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    <TextBlock Grid.Column="2" Style="{StaticResource CaptionTextStyle}" FontFamily="{StaticResource MonospaceFontFamily}" FontSize="11" Text="{Binding BuildDate}" TextWrapping="NoWrap" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

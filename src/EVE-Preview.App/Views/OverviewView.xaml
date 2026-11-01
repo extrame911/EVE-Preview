@@ -1,0 +1,89 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:EvePreview.App.ViewModels"
+                    xmlns:controls="clr-namespace:EvePreview.App.Controls">
+    <DataTemplate DataType="{x:Type vm:OverviewViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+            <StackPanel>
+                <controls:CutCornerPanel Style="{StaticResource StatusCardStyle}">
+                    <StackPanel>
+                        <Grid Margin="16,12,16,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2" />
+                                <ColumnDefinition Width="14" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Background="{StaticResource SuccessBrush}" />
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="运行状态" FontSize="12" Foreground="{StaticResource SecondaryBrush}" TextWrapping="NoWrap" />
+                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="18" Foreground="{StaticResource SuccessBrush}" Margin="0,3,0,0" TextWrapping="NoWrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                <TextBlock Text="检测到客户端" FontSize="12" Foreground="{StaticResource SecondaryBrush}" TextWrapping="NoWrap" />
+                                <TextBlock Text="{Binding ClientCount}" FontSize="18" Margin="0,3,0,0" TextWrapping="NoWrap" />
+                            </StackPanel>
+                            <Button ToolTip="{Binding Source=启动、暂停或恢复客户端预览。, Converter={StaticResource LocalizationConverter}}" Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0"
+                                    Style="{StaticResource PrimaryButtonStyle}" Content="{Binding TogglePreviewText}"
+                                    Command="{Binding DataContext.TogglePreviewCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        </Grid>
+                        <Border BorderBrush="#59203543" BorderThickness="0,1,0,0" Margin="16,0" Padding="0,11">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" /><ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="快捷操作" FontSize="12" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                                <Button ToolTip="{Binding Source=恢复并显示所有已检测的 EVE 客户端窗口。, Converter={StaticResource LocalizationConverter}}" Grid.Column="2" Content="显示全部客户端" Style="{StaticResource SecondaryButtonStyle}"
+                                        Height="30" MinWidth="0" Margin="0" Padding="6,0"
+                                        Command="{Binding DataContext.ShowAllClientsCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <Button ToolTip="{Binding Source=最小化所有正在运行的 EVE 客户端窗口。, Converter={StaticResource LocalizationConverter}}" Grid.Column="4" Content="最小化全部" Style="{StaticResource SecondaryButtonStyle}"
+                                        Height="30" MinWidth="0" Margin="0" Padding="6,0"
+                                        Command="{Binding DataContext.MinimizeAllClientsCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <Button ToolTip="{Binding Source=读取所有未最小化客户端的窗口位置和大小并保存。, Converter={StaticResource LocalizationConverter}}" Grid.Column="6" Content="保存所有窗口位置" Style="{StaticResource SecondaryButtonStyle}"
+                                        Height="30" MinWidth="0" Margin="0" Padding="6,0"
+                                        Command="{Binding DataContext.SaveAllWindowLayoutsCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding LayoutStatusText}" Style="{StaticResource CaptionTextStyle}"
+                                   Margin="16,0,16,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </controls:CutCornerPanel>
+
+                <controls:CutCornerPanel Style="{StaticResource CardStyle}" Header="客户端"
+                                         Icon="{StaticResource ClientIconGeometry}" SectionCode="CLIENT SURFACES">
+                    <Grid>
+                        <TextBlock x:Name="EmptyClients" Style="{StaticResource CaptionTextStyle}" Visibility="Collapsed"
+                                   Text="尚未检测到客户端。请在“系统 → 监控”中配置可执行文件名。" />
+                        <ItemsControl ItemsSource="{Binding Clients}" MaxWidth="500">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource ClientCardStyle}" MinHeight="112">
+                                        <Grid>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                            <TextBlock Text="{Binding CharacterName}" FontSize="17" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                            <TextBlock Grid.Row="1" Text="{Binding ServerName}" Style="{StaticResource CaptionTextStyle}" Margin="0,2,0,0" TextWrapping="NoWrap" />
+                                            <TextBlock Grid.Row="2" Margin="0,12,0,0" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Bottom" TextWrapping="NoWrap">
+                                                <Run Text="{Binding ActivityText}" /><Run Text=" · " />
+                                                <Run Text="{Binding VisibilityText}" /><Run Text=" · " />
+                                                <Run Text="{Binding CycleStatusText}" />
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </controls:CutCornerPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Clients.Count}" Value="0"><Setter TargetName="EmptyClients" Property="Visibility" Value="Visible" /></DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+</ResourceDictionary>

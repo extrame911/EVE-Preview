@@ -1,0 +1,17 @@
+﻿<Application x:Class="EvePreview.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/IconResources.xaml" />
+                <ResourceDictionary Source="Themes/DarkTheme.xaml" />
+                <ResourceDictionary Source="Views/OverviewView.xaml" />
+                <ResourceDictionary Source="Views/ThumbnailSettingsView.xaml" />
+                <ResourceDictionary Source="Views/ClientsView.xaml" />
+                <ResourceDictionary Source="Views/CycleGroupsView.xaml" />
+                <ResourceDictionary Source="Views/SystemSettingsView.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
