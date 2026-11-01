@@ -19,6 +19,7 @@
                         <CheckBox ToolTip="{Binding Source=开启后最小化主窗口时隐藏到系统托盘。, Converter={StaticResource LocalizationConverter}}" Content="最小化主窗口到托盘" IsChecked="{Binding MinimizeToTray}" />
                         <CheckBox ToolTip="{Binding Source=开启后关闭主窗口时隐藏到托盘；关闭后则直接退出程序。, Converter={StaticResource LocalizationConverter}}" Content="关闭主窗口时最小化到托盘（取消则退出）" IsChecked="{Binding CloseToTray}" />
                         <CheckBox ToolTip="{Binding Source=开启后自动最小化非活动 EVE 客户端窗口。, Converter={StaticResource LocalizationConverter}}" Content="自动最小化非活动客户端" IsChecked="{Binding MinimizeInactiveClients}" />
+                        <CheckBox ToolTip="{Binding Source=开启后，启动预览或客户端登录时自动应用保存的游戏窗口位置；取消后仅保留手动应用。, Converter={StaticResource LocalizationConverter}}" Content="启动时自动还原游戏窗口位置" IsChecked="{Binding AutoRestoreClientWindowOnStartup}" />
                         <CheckBox ToolTip="{Binding Source=开启后保留 Windows 窗口动画；关闭后操作客户端时临时禁用动画。, Converter={StaticResource LocalizationConverter}}" Content="使用 Windows 窗口动画" IsChecked="{Binding EnableWindowAnimations}" />
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="20,2,0,0"
                                    Text="取消勾选后，切换、最小化或还原客户端时临时禁用系统窗口动画，操作完成后自动恢复。" />

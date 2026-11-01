@@ -18,6 +18,41 @@ public sealed class PreviewSnapGeometryTests
     }
 
     [Fact]
+    public void Rectangle_monitor_lookup_uses_its_center_point()
+    {
+        var bounds = new PixelRectangle(100, 100, 200, 100);
+
+        var actual = MonitorGeometry.FromRectangleCenter(bounds);
+        var expected = MonitorGeometry.FromPoint(200, 150);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Cross_monitor_drop_fully_fits_the_preview_inside_the_shorter_work_area()
+    {
+        var constrained = PreviewSnapGeometry.ConstrainToWorkArea(
+            new PixelRectangle(2500, 1200, 320, 180),
+            new PixelRectangle(2560, 0, 1920, 1080),
+            visibleMargin: 128,
+            keepFullyVisible: true);
+
+        Assert.Equal(new PixelRectangle(2560, 900, 320, 180), constrained);
+    }
+
+    [Fact]
+    public void Same_monitor_drop_keeps_the_configured_visible_margin()
+    {
+        var constrained = PreviewSnapGeometry.ConstrainToWorkArea(
+            new PixelRectangle(2560, 1200, 320, 180),
+            new PixelRectangle(2560, 0, 1920, 1080),
+            visibleMargin: 128,
+            keepFullyVisible: false);
+
+        Assert.Equal(new PixelRectangle(2560, 952, 320, 180), constrained);
+    }
+
+    [Fact]
     public void Grid_snap_uses_the_selected_monitor_work_area_origin()
     {
         var snapped = PreviewSnapGeometry.Snap(

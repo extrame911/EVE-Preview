@@ -70,6 +70,107 @@ public sealed class PreviewWindowOverlayTitleTests(WpfApplicationFixture wpf)
         });
     }
 
+    [Fact]
+    public void Overlay_bounds_match_the_preview_window_in_physical_pixels()
+    {
+        wpf.Invoke(() =>
+        {
+            using var preview = CreatePreview(displayName: "Main", alias: "Main");
+            preview.Left = 100;
+            preview.Top = 100;
+            preview.Show();
+            var overlay = new PreviewOverlayWindow(preview);
+            try
+            {
+                overlay.Show();
+                overlay.Sync(preview);
+
+                var ownerOrigin = preview.PointToScreen(new Point(0, 0));
+                var ownerEnd = preview.PointToScreen(new Point(preview.ActualWidth, preview.ActualHeight));
+                var overlayOrigin = overlay.PointToScreen(new Point(0, 0));
+                var overlayEnd = overlay.PointToScreen(new Point(overlay.ActualWidth, overlay.ActualHeight));
+
+                Assert.Equal(ownerOrigin.X, overlayOrigin.X, 1);
+                Assert.Equal(ownerOrigin.Y, overlayOrigin.Y, 1);
+                Assert.Equal(ownerEnd.X, overlayEnd.X, 1);
+                Assert.Equal(ownerEnd.Y, overlayEnd.Y, 1);
+            }
+            finally
+            {
+                overlay.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void Overlay_title_keeps_its_physical_size_across_monitor_dpi()
+    {
+        wpf.Invoke(() =>
+        {
+            var settings = new AppSettings();
+            settings.Overlay.FontSize = 14;
+            using var preview = CreatePreview(displayName: "Main", alias: "Main");
+            preview.Left = -10000;
+            preview.Top = -10000;
+            preview.Show();
+            var overlay = new PreviewOverlayWindow(preview);
+            try
+            {
+                overlay.UpdateAppearance(settings, false, 255, true);
+                typeof(PreviewOverlayWindow)
+                    .GetMethod(
+                        "UpdateDpiCompensation",
+                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        binder: null,
+                        types: new[] { typeof(double) },
+                        modifiers: null)!
+                    .Invoke(overlay, new object[] { 1.5 });
+
+                var title = (TextBlock)typeof(PreviewOverlayWindow)
+                    .GetField("_title", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(overlay)!;
+                var expected = 14 * PreviewMonitorDpi.GetPrimaryScale().X / 1.5;
+                Assert.Equal(expected, title.FontSize, 6);
+                Assert.Equal(14 * PreviewMonitorDpi.GetPrimaryScale().X, title.FontSize * 1.5, 6);
+            }
+            finally
+            {
+                overlay.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void Overlay_size_is_locked_while_the_owner_is_dragging()
+    {
+        wpf.Invoke(() =>
+        {
+            using var preview = CreatePreview(displayName: "Main", alias: "Main");
+            preview.Left = -10000;
+            preview.Top = -10000;
+            preview.Show();
+            var overlay = new PreviewOverlayWindow(preview);
+            try
+            {
+                overlay.Show();
+                overlay.Sync(preview);
+                typeof(PreviewWindow)
+                    .GetField("_rightDown", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(preview, true);
+                var expected = TestWindowGeometry.GetPhysicalSize(overlay);
+
+                overlay.Width = 999;
+                overlay.Height = 777;
+
+                Assert.Equal(expected, TestWindowGeometry.GetPhysicalSize(overlay));
+            }
+            finally
+            {
+                overlay.Close();
+            }
+        });
+    }
+
     private static PreviewWindow CreatePreview(
         string displayName,
         string? alias = null,

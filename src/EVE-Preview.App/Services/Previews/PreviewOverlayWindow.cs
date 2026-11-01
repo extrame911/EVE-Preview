@@ -21,9 +21,15 @@ public sealed class PreviewOverlayWindow : Window
     private const long WsExTransparent = 0x00000020;
     private const long WsExToolWindow = 0x00000080;
     private const long WsExNoActivate = 0x08000000;
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpNoOwnerZOrder = 0x0200;
+    private const int WmWindowPosChanging = 0x0046;
     private readonly Border _border;
     private readonly Border _titlePanel;
     private readonly TextBlock _title;
+    private double _configuredFontSize = 12;
+    private double _highlightThickness;
 
     public PreviewOverlayWindow(Window owner)
     {
@@ -66,16 +72,35 @@ public sealed class PreviewOverlayWindow : Window
         root.Children.Add(_titlePanel);
         root.Children.Add(_border);
         Content = root;
+        DpiChanged += (_, _) => UpdateDpiCompensation();
         SourceInitialized += (_, _) => MakeClickThrough();
+        Closed += (_, _) => RemoveNativeHook();
     }
 
     public void Sync(Window owner)
     {
+        Topmost = owner.Topmost;
+        var ownerHandle = new WindowInteropHelper(owner).Handle;
+        var overlayHandle = new WindowInteropHelper(this).Handle;
+        if (ownerHandle != 0 &&
+            overlayHandle != 0 &&
+            GetWindowRect(ownerHandle, out var rect))
+        {
+            SetWindowPos(
+                overlayHandle,
+                0,
+                rect.Left,
+                rect.Top,
+                rect.Right - rect.Left,
+                rect.Bottom - rect.Top,
+                SwpNoZOrder | SwpNoActivate | SwpNoOwnerZOrder);
+            return;
+        }
+
         Left = owner.Left;
         Top = owner.Top;
-        Width = owner.Width;
-        Height = owner.Height;
-        Topmost = owner.Topmost;
+        Width = owner.ActualWidth > 0 ? owner.ActualWidth : owner.Width;
+        Height = owner.ActualHeight > 0 ? owner.ActualHeight : owner.Height;
     }
 
     public void UpdateAppearance(
@@ -87,7 +112,7 @@ public sealed class PreviewOverlayWindow : Window
         bool compact = false)
     {
         _title.Text = TitleSource;
-        _title.FontSize = Math.Clamp(settings.Overlay.FontSize, 10, 32);
+        _configuredFontSize = Math.Clamp(settings.Overlay.FontSize, 10, 32);
         var (textColor, outlineColor) = PreviewTextPalette.Resolve(settings.Overlay.TextColor);
         _title.Foreground = new SolidColorBrush(textColor);
         _title.Effect = new DropShadowEffect
@@ -115,9 +140,7 @@ public sealed class PreviewOverlayWindow : Window
 
         var highlight = active && settings.Overlay.HighlightActive;
         var showBorder = highlight;
-        _border.BorderThickness = showBorder
-            ? new Thickness(highlight ? Math.Clamp(settings.Overlay.HighlightThickness, 1, 8) : 1)
-            : new Thickness(0);
+        _highlightThickness = showBorder ? Math.Clamp(settings.Overlay.HighlightThickness, 1, 8) : 0;
         _border.BorderBrush = ParseBrush(
             highlight
                 ? string.IsNullOrWhiteSpace(highlightColor)
@@ -129,18 +152,74 @@ public sealed class PreviewOverlayWindow : Window
         _titlePanel.Opacity = contentOpacity;
         _border.Opacity = showBorder ? 0.8 : 0;
         Opacity = contentVisible ? 1 : 0;
+        UpdateDpiCompensation();
     }
 
     public string TitleSource { get; set; } = string.Empty;
 
+    private void UpdateDpiCompensation() =>
+        UpdateDpiCompensation(VisualTreeHelper.GetDpi(this).DpiScaleX);
+
+    private void UpdateDpiCompensation(double currentScale)
+    {
+        if (currentScale <= 0)
+        {
+            return;
+        }
+
+        var compensation = PreviewMonitorDpi.GetPrimaryScale().X / currentScale;
+        _title.FontSize = _configuredFontSize * compensation;
+        _titlePanel.Padding = new Thickness(8 * compensation, 4 * compensation, 8 * compensation, 4 * compensation);
+        _border.Margin = new Thickness(compensation);
+        _border.BorderThickness = new Thickness(_highlightThickness * compensation);
+        if (_title.Effect is DropShadowEffect shadow)
+        {
+            shadow.BlurRadius = 1.5 * compensation;
+        }
+    }
+
     private void MakeClickThrough()
     {
         var handle = new WindowInteropHelper(this).Handle;
+        HwndSource.FromHwnd(handle)?.AddHook(NativeMessageHook);
         var extendedStyle = GetWindowLongPtr(handle, GwlExStyle).ToInt64();
         SetWindowLongPtr(
             handle,
             GwlExStyle,
             new nint(extendedStyle | WsExTransparent | WsExToolWindow | WsExNoActivate));
+    }
+
+    private void RemoveNativeHook()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != 0)
+        {
+            HwndSource.FromHwnd(handle)?.RemoveHook(NativeMessageHook);
+        }
+    }
+
+    private nint NativeMessageHook(
+        nint windowHandle,
+        int message,
+        nint wParam,
+        nint lParam,
+        ref bool handled)
+    {
+        if (message == WmWindowPosChanging &&
+            Owner is PreviewWindow { IsDragging: true } owner &&
+            lParam != 0)
+        {
+            var ownerHandle = new WindowInteropHelper(owner).Handle;
+            if (ownerHandle != 0 && GetWindowRect(ownerHandle, out var ownerRect))
+            {
+                var position = Marshal.PtrToStructure<NativeWindowPosition>(lParam);
+                position.Width = Math.Max(1, ownerRect.Right - ownerRect.Left);
+                position.Height = Math.Max(1, ownerRect.Bottom - ownerRect.Top);
+                Marshal.StructureToPtr(position, lParam, false);
+            }
+        }
+
+        return 0;
     }
 
     private static Brush ParseBrush(string value, string fallback) =>
@@ -167,4 +246,40 @@ public sealed class PreviewOverlayWindow : Window
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     private static extern nint SetWindowLongPtr(nint windowHandle, int index, nint newValue);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(nint windowHandle, out NativeRect rect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        nint windowHandle,
+        nint insertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeWindowPosition
+    {
+        public nint WindowHandle;
+        public nint InsertAfter;
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
+        public uint Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 }

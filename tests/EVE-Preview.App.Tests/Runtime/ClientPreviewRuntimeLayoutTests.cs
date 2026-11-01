@@ -101,6 +101,76 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
     }
 
     [Fact]
+    public void Disabled_auto_restore_skips_the_saved_layout_when_a_logged_in_client_is_added()
+    {
+        wpf.Invoke(() =>
+        {
+            const string characterTitle = "EVE - Alpha";
+            var settings = new AppSettings();
+            settings.General.AutoRestoreClientWindowOnStartup = false;
+            settings.Clients.Add(new ClientSettings
+            {
+                OriginalTitle = characterTitle,
+                ClientWindowBounds = new PixelRectangle(-40, 120, 1920, 1080)
+            });
+            var queue = new FakeWindowOperationQueue();
+            var storePath = Path.Combine(AppContext.BaseDirectory, $"layout-test-{Guid.NewGuid():N}.json");
+            var runtime = new ClientPreviewRuntime(settings, new JsonSettingsStore(storePath), queue);
+            try
+            {
+                AddPreview(runtime, settings, 1, 101, characterTitle);
+
+                Assert.Empty(queue.Requests);
+            }
+            finally
+            {
+                runtime.Dispose();
+                DeleteStoreFiles(storePath);
+            }
+        });
+    }
+
+    [Fact]
+    public void Manual_apply_uses_the_saved_layout_even_when_auto_restore_is_disabled()
+    {
+        wpf.Invoke(async () =>
+        {
+            const string characterTitle = "EVE - Alpha";
+            var settings = new AppSettings();
+            settings.General.AutoRestoreClientWindowOnStartup = false;
+            settings.Clients.Add(new ClientSettings
+            {
+                OriginalTitle = characterTitle,
+                ClientWindowBounds = new PixelRectangle(-40, 120, 1920, 1080)
+            });
+            var queue = new FakeWindowOperationQueue();
+            var storePath = Path.Combine(AppContext.BaseDirectory, $"layout-test-{Guid.NewGuid():N}.json");
+            var runtime = new ClientPreviewRuntime(settings, new JsonSettingsStore(storePath), queue);
+            try
+            {
+                AddPreview(runtime, settings, 1, 101, characterTitle);
+                queue.Requests.Clear();
+
+                var applied = await runtime.ApplyClientWindowLayoutAsync(characterTitle);
+
+                Assert.True(applied);
+                Assert.Collection(queue.Requests,
+                    request => Assert.Equal(WindowOperationKind.Restore, request.Kind),
+                    request =>
+                    {
+                        Assert.Equal(WindowOperationKind.MoveResize, request.Kind);
+                        Assert.Equal(new WindowBounds(-40, 120, 1920, 1080), request.Bounds);
+                    });
+            }
+            finally
+            {
+                runtime.Dispose();
+                DeleteStoreFiles(storePath);
+            }
+        });
+    }
+
+    [Fact]
     public void Login_title_transition_applies_the_saved_client_window_layout()
     {
         wpf.Invoke(() =>

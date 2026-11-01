@@ -49,6 +49,9 @@ internal static class LocalizationCatalog
         ["最小化主窗口到托盘"] = "Minimize main window to tray",
         ["关闭主窗口时最小化到托盘（取消则退出）"] = "Close main window to tray (cancel means exits)",
         ["自动最小化非活动客户端"] = "Minimize inactive clients automatically",
+        ["启动时自动还原游戏窗口位置"] = "Restore game window positions automatically at startup",
+        ["开启后，启动预览或客户端登录时自动应用保存的游戏窗口位置；取消后仅保留手动应用。"] =
+            "When enabled, saved game window positions are applied automatically at startup or when a client logs in. When disabled, only manual apply remains.",
         ["使用 Windows 窗口动画"] = "Use Windows window animations",
         ["取消勾选后，切换、最小化或还原客户端时临时禁用系统窗口动画，操作完成后自动恢复。"] =
             "When cleared, Windows window animations are suspended while switching, minimizing or restoring clients, then restored.",

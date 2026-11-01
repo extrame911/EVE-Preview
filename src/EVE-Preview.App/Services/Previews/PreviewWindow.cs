@@ -16,6 +16,7 @@ public sealed partial class PreviewWindow : Window, IDisposable
     private readonly DispatcherTimer _activeHideTimer;
     private readonly DispatcherTimer _focusLostTimer;
     private readonly DispatcherTimer _zoomDelayTimer;
+    private readonly DispatcherTimer _dragSettleTimer;
     private ProcessSnapshot _client;
     private string? _alias;
     private System.Windows.Controls.ToolTip? _windowToolTip;
@@ -42,11 +43,12 @@ public sealed partial class PreviewWindow : Window, IDisposable
     private bool _useDefaultPhysicalSize;
     private bool _suppressClick;
     private bool _disposed;
-    private Point _dragStart;
-    private double _dragLeft;
-    private double _dragTop;
-    private double _dragWidth;
-    private double _dragHeight;
+    private Point _dragStartPhysical;
+    private double _dragLeftPhysical;
+    private double _dragTopPhysical;
+    private double _dragWidthPhysical;
+    private double _dragHeightPhysical;
+    private PixelRectangle? _physicalDragTarget;
 
     public PreviewWindow(
         ProcessSnapshot client,
@@ -73,10 +75,16 @@ public sealed partial class PreviewWindow : Window, IDisposable
         (_gdiImage, _compactSurface, _privacyOverlay) = BuildVisualTree();
         SubscribeEvents();
         (_activeHideTimer, _focusLostTimer, _zoomDelayTimer) = CreateDelayTimers();
+        _dragSettleTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(250)
+        };
+        _dragSettleTimer.Tick += OnDragSettleTick;
         ApplySettings(settings, active: false);
     }
 
     public ProcessSnapshot Client => _client;
+    internal bool IsDragging => _rightDown;
     public string DisplayName { get; private set; }
     public ClientIdentity Identity => new(
         _client.ProcessId,

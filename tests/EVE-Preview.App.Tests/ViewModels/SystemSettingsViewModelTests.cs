@@ -1,4 +1,5 @@
 using EvePreview.App.ViewModels;
+using EvePreview.Core;
 
 namespace EvePreview.App.Tests;
 
@@ -18,6 +19,19 @@ public sealed class SystemSettingsViewModelTests
         Assert.NotNull(change);
         Assert.Equal(SystemSettingsViewModel.CompatibilityModeSettingName, change.SettingName);
         Assert.Equal(true, change.Value);
+    }
+
+    [Fact]
+    public void Auto_restore_client_window_defaults_on_and_loads_a_saved_off_value()
+    {
+        var viewModel = new SystemSettingsViewModel();
+        Assert.True(viewModel.AutoRestoreClientWindowOnStartup);
+
+        var settings = new AppSettings();
+        settings.General.AutoRestoreClientWindowOnStartup = false;
+        viewModel.LoadFrom(settings);
+
+        Assert.False(viewModel.AutoRestoreClientWindowOnStartup);
     }
 
     [Fact]

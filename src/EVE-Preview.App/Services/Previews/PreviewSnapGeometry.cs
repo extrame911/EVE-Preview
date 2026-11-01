@@ -56,6 +56,39 @@ public static class PreviewSnapGeometry
         return new PixelRectangle(x, y, bounds.Width, bounds.Height);
     }
 
+    public static PixelRectangle ConstrainToWorkArea(
+        PixelRectangle bounds,
+        PixelRectangle workArea,
+        int visibleMargin,
+        bool keepFullyVisible)
+    {
+        var marginX = keepFullyVisible
+            ? bounds.Width
+            : Math.Clamp(visibleMargin, 0, Math.Max(0, bounds.Width - 1));
+        var marginY = keepFullyVisible
+            ? bounds.Height
+            : Math.Clamp(visibleMargin, 0, Math.Max(0, bounds.Height - 1));
+        var minX = workArea.X - bounds.Width + marginX;
+        var maxX = workArea.X + workArea.Width - marginX;
+        var minY = workArea.Y - bounds.Height + marginY;
+        var maxY = workArea.Y + workArea.Height - marginY;
+        if (minX > maxX)
+        {
+            minX = maxX = workArea.X;
+        }
+
+        if (minY > maxY)
+        {
+            minY = maxY = workArea.Y;
+        }
+
+        return new PixelRectangle(
+            Math.Clamp(bounds.X, minX, maxX),
+            Math.Clamp(bounds.Y, minY, maxY),
+            bounds.Width,
+            bounds.Height);
+    }
+
     private static int SnapCoordinate(int value, int origin, int gridSize) =>
         origin + (int)Math.Round((value - origin) / (double)gridSize, MidpointRounding.AwayFromZero) * gridSize;
 

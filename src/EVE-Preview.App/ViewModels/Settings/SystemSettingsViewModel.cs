@@ -37,6 +37,9 @@ public sealed partial class SystemSettingsViewModel : ObservableObject
     private bool _minimizeInactiveClients;
 
     [ObservableProperty]
+    private bool _autoRestoreClientWindowOnStartup = true;
+
+    [ObservableProperty]
     private bool _enableWindowAnimations = true;
 
     [ObservableProperty]
@@ -112,6 +115,7 @@ public sealed partial class SystemSettingsViewModel : ObservableObject
         MinimizeToTray = settings.General.MinimizeToTray;
         CloseToTray = settings.General.CloseToTray;
         MinimizeInactiveClients = settings.General.MinimizeInactiveClients;
+        AutoRestoreClientWindowOnStartup = settings.General.AutoRestoreClientWindowOnStartup;
         EnableWindowAnimations = settings.General.UseWindowAnimations;
         ExecutableNames = string.Join(", ", settings.Monitoring.ProcessNames);
         PollingIntervalMilliseconds = settings.Monitoring.PollIntervalMs;

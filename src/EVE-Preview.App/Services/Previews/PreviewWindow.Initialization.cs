@@ -60,11 +60,12 @@ public sealed partial class PreviewWindow
     {
         Loaded += (_, _) =>
         {
+            ApplyPlacement(_placement);
             UpdateCompactState();
             UpdateThumbnailBounds();
         };
         LocationChanged += (_, _) => SyncOverlay();
-        DpiChanged += (_, _) => HandleDpiChange();
+        DpiChanged += (_, args) => HandleDpiChange(args.NewDpi);
         IsVisibleChanged += (_, _) => SyncOverlay();
         SizeChanged += (_, _) =>
         {
@@ -80,7 +81,8 @@ public sealed partial class PreviewWindow
         MouseMove += OnMouseMove;
         MouseEnter += OnMouseEnter;
         MouseLeave += OnMouseLeave;
-        Deactivated += (_, _) => ResetPointerState();
+        LostMouseCapture += OnLostMouseCapture;
+        Deactivated += OnDeactivated;
         SourceInitialized += OnSourceInitialized;
     }
 
@@ -95,17 +97,30 @@ public sealed partial class PreviewWindow
         return (activeHide, focusLost, zoomDelay);
     }
 
-    private void HandleDpiChange()
+    private void HandleDpiChange() => HandleDpiChange(VisualTreeHelper.GetDpi(this));
+
+    private void HandleDpiChange(DpiScale newDpi)
     {
         if (_zoomed || _zoomPending)
         {
             RestoreZoom();
         }
 
+        if (_physicalDragTarget is { } target)
+        {
+            SetPhysicalWindowBounds(target.X, target.Y, target.Width, target.Height);
+            return;
+        }
+
         if (_useDefaultPhysicalSize)
         {
             ApplyDefaultPhysicalSize(_settings);
+            return;
         }
+
+        var systemDpi = PreviewMonitorDpi.GetPrimaryScale();
+        Width = _placement.Width * systemDpi.X / newDpi.DpiScaleX;
+        Height = _placement.Height * systemDpi.Y / newDpi.DpiScaleY;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
@@ -116,6 +131,8 @@ public sealed partial class PreviewWindow
             return;
         }
 
+        var source = HwndSource.FromHwnd(handle);
+        source?.AddHook(NativeMessageHook);
         var margins = new Margins
         {
             Left = -1,
@@ -124,7 +141,7 @@ public sealed partial class PreviewWindow
             Bottom = -1
         };
         DwmExtendFrameIntoClientArea(handle, ref margins);
-        if (HwndSource.FromHwnd(handle)?.CompositionTarget is { } target)
+        if (source?.CompositionTarget is { } target)
         {
             target.BackgroundColor = Colors.Transparent;
         }

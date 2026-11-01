@@ -45,7 +45,7 @@ public sealed class InputCommitTimingRenderingTests(WpfApplicationFixture wpf)
                     .SelectMany(FindDescendants<FrameworkElement>)
                     .Where(element => element is CheckBox or TextBox or ComboBox or ColorPickerBox)
                     .ToArray();
-                Assert.Equal(47, optionInputs.Length);
+                Assert.Equal(48, optionInputs.Length);
                 Assert.All(optionInputs, element => Assert.False(
                     string.IsNullOrWhiteSpace((element as FrameworkElement).ToolTip as string),
                     $"Missing tooltip on {element.GetType().Name}"));
@@ -78,6 +78,11 @@ public sealed class InputCommitTimingRenderingTests(WpfApplicationFixture wpf)
 
                 var executableNames = FindBoundTextBox(systemWindow, "ExecutableNames");
                 var originalNames = viewModel.SystemSettings.ExecutableNames;
+                var autoRestore = FindDescendants<CheckBox>(systemWindow).Single(candidate =>
+                    Equals(candidate.Content, "启动时自动还原游戏窗口位置"));
+                Assert.True(autoRestore.IsChecked);
+                autoRestore.IsChecked = false;
+                Assert.False(viewModel.SystemSettings.AutoRestoreClientWindowOnStartup);
                 executableNames.Text = "exefile, other";
                 Assert.Equal(originalNames, viewModel.SystemSettings.ExecutableNames);
                 executableNames.RaiseEvent(new KeyEventArgs(

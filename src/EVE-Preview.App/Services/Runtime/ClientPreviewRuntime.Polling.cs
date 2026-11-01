@@ -187,8 +187,8 @@ public sealed partial class ClientPreviewRuntime
             preview.ApplyPlacement(new PreviewPlacement(
                 stored.Left,
                 stored.Top,
-                preview.Width,
-                preview.Height));
+                preview.Placement.Width,
+                preview.Placement.Height));
         }
     }
 

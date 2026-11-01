@@ -12,11 +12,18 @@ public sealed record MonitorGeometry(
     private const int MonitorDpiTypeEffective = 0;
     private const uint DefaultDpi = 96;
 
-    public static MonitorGeometry? FromPoint(double x, double y)
-    {
-        var monitor = MonitorFromPoint(
+    public static MonitorGeometry? FromPoint(double x, double y) =>
+        FromMonitor(MonitorFromPoint(
             new NativePoint((int)Math.Round(x), (int)Math.Round(y)),
-            MonitorDefaultToNearest);
+            MonitorDefaultToNearest));
+
+    public static MonitorGeometry? FromRectangleCenter(PixelRectangle bounds) =>
+        FromPoint(
+            bounds.X + bounds.Width / 2.0,
+            bounds.Y + bounds.Height / 2.0);
+
+    private static MonitorGeometry? FromMonitor(nint monitor)
+    {
         if (monitor == 0)
         {
             return null;

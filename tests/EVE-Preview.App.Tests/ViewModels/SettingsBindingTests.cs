@@ -35,10 +35,12 @@ public sealed class SettingsBindingTests
         viewModel.SystemSettings.ExecutableNames = @"C:\Games\EVE\ExeFile.exe, other";
         viewModel.SystemSettings.PollingIntervalMilliseconds = 750;
         viewModel.SystemSettings.UseCompatibilityMode = true;
+        viewModel.SystemSettings.AutoRestoreClientWindowOnStartup = false;
 
         Assert.Equal(["exefile", "other"], settings.Monitoring.ProcessNames);
         Assert.Equal(750, settings.Monitoring.PollIntervalMs);
         Assert.Equal(RenderingMode.Gdi, settings.Compatibility.RenderingMode);
+        Assert.False(settings.General.AutoRestoreClientWindowOnStartup);
     }
 
     [Fact]

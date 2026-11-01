@@ -17,7 +17,7 @@ A Windows x64 multi-client preview and window-control utility for EVE Online. It
 - Physical-pixel thumbnail sizes, opacity, always-on-top, position lock, grid/edge snapping, hover zoom, active-client highlighting, and privacy masking.
 - Per-client alias, individual global hotkey, cycle exclusion, privacy mask, and preview visibility.
 - Per-monitor DPI handling, including mixed-DPI multi-monitor placement and center-point monitor selection.
-- Save and apply EVE client window positions and sizes, individually or in bulk.
+- Save and apply EVE client window positions and sizes, individually or in bulk, with an optional startup auto-restore toggle.
 - Dynamically sized cycle groups with global, group, and per-client hotkeys.
 - Dark WPF control interface, tray integration, pause/resume, atomic configuration saves, and automatic invalid-configuration repair.
 - English and Simplified Chinese UI.

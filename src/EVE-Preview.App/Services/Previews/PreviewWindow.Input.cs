@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using EvePreview.Core;
 using Point = System.Windows.Point;
 
@@ -58,11 +59,31 @@ public sealed partial class PreviewWindow
         RestoreZoom();
         _rightDown = true;
         _resizing = Mouse.LeftButton == MouseButtonState.Pressed;
-        _dragStart = GetScreenPoint(e);
-        _dragLeft = Left;
-        _dragTop = Top;
-        _dragWidth = Width;
-        _dragHeight = Height;
+        _dragStartPhysical = GetPhysicalScreenPoint(e);
+        if (TryGetPhysicalWindowBounds(out var windowBounds))
+        {
+            _dragLeftPhysical = windowBounds.X;
+            _dragTopPhysical = windowBounds.Y;
+            _dragWidthPhysical = windowBounds.Width;
+            _dragHeightPhysical = windowBounds.Height;
+        }
+        else
+        {
+            var origin = PointToScreen(new Point(0, 0));
+            var dpi = VisualTreeHelper.GetDpi(this);
+            _dragLeftPhysical = origin.X;
+            _dragTopPhysical = origin.Y;
+            _dragWidthPhysical = Math.Max(1, ActualWidth * dpi.DpiScaleX);
+            _dragHeightPhysical = Math.Max(1, ActualHeight * dpi.DpiScaleY);
+        }
+
+        _dragSettleTimer.Stop();
+        _physicalDragTarget = new PixelRectangle(
+            (int)Math.Round(_dragLeftPhysical),
+            (int)Math.Round(_dragTopPhysical),
+            (int)Math.Round(_dragWidthPhysical),
+            (int)Math.Round(_dragHeightPhysical));
+
         CaptureMouse();
         e.Handled = true;
     }
@@ -74,135 +95,118 @@ public sealed partial class PreviewWindow
             return;
         }
 
-        _rightDown = false;
-        _suppressClick = true;
-        ReleaseMouseCapture();
-        ApplyDragSnap();
-        _placement = ConstrainToScreen(new PreviewPlacement(Left, Top, Width, Height));
-        ApplyPlacement(_placement);
-        _placementChanged(this, _placement);
+        CompleteRightDrag(GetPhysicalScreenPoint(e));
         e.Handled = true;
     }
 
-    private void OnMouseMove(object sender, MouseEventArgs e)
+    private void OnLostMouseCapture(object sender, MouseEventArgs e)
     {
         if (!_rightDown)
         {
             return;
         }
 
-        var point = GetScreenPoint(e);
-        var deltaX = point.X - _dragStart.X;
-        var deltaY = point.Y - _dragStart.Y;
-        if (_resizing)
+        if (Mouse.RightButton == MouseButtonState.Pressed)
         {
-            _useDefaultPhysicalSize = false;
-            var dpi = VisualTreeHelper.GetDpi(this);
-            Width = Math.Clamp(
-                _dragWidth + deltaX,
-                PreviewPixelSize.ToDip(_settings.Preview.MinWidth, dpi.DpiScaleX),
-                PreviewPixelSize.ToDip(_settings.Preview.MaxWidth, dpi.DpiScaleX));
-            Height = Math.Clamp(
-                _dragHeight + deltaY,
-                PreviewPixelSize.ToDip(_settings.Preview.MinHeight, dpi.DpiScaleY),
-                PreviewPixelSize.ToDip(_settings.Preview.MaxHeight, dpi.DpiScaleY));
-        }
-        else
-        {
-            Left = _dragLeft + deltaX;
-            Top = _dragTop + deltaY;
+            RestoreDragCapture();
+            return;
         }
 
-        e.Handled = true;
+        CompleteRightDrag(PointToScreen(Mouse.GetPosition(this)));
     }
 
-    private Point GetScreenPoint(MouseEventArgs e)
+    private void OnDeactivated(object? sender, EventArgs e)
     {
-        var screen = PointToScreen(e.GetPosition(this));
-        var dpi = VisualTreeHelper.GetDpi(this);
-        return new Point(screen.X / dpi.DpiScaleX, screen.Y / dpi.DpiScaleY);
+        if (_rightDown && Mouse.RightButton == MouseButtonState.Pressed)
+        {
+            RestoreDragCapture();
+            return;
+        }
+
+        ResetPointerState();
     }
 
-    private void ApplyDragSnap()
+    private void RestoreDragCapture()
     {
-        if (TryApplyMonitorSnap())
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+        {
+            if (_rightDown && Mouse.RightButton == MouseButtonState.Pressed && !IsMouseCaptured)
+            {
+                CaptureMouse();
+            }
+        });
+    }
+
+    private void CompleteRightDrag(Point dropPoint)
+    {
+        _rightDown = false;
+        _suppressClick = true;
+        ReleaseMouseCapture();
+        var releaseDeltaX = dropPoint.X - _dragStartPhysical.X;
+        var releaseDeltaY = dropPoint.Y - _dragStartPhysical.Y;
+        var physicalWidth = _useDefaultPhysicalSize
+            ? Math.Clamp(_settings.Preview.DefaultWidth, _settings.Preview.MinWidth, _settings.Preview.MaxWidth)
+            : _resizing
+                ? Math.Clamp(_dragWidthPhysical + releaseDeltaX, _settings.Preview.MinWidth, _settings.Preview.MaxWidth)
+                : _dragWidthPhysical;
+        var physicalHeight = _useDefaultPhysicalSize
+            ? Math.Clamp(_settings.Preview.DefaultHeight, _settings.Preview.MinHeight, _settings.Preview.MaxHeight)
+            : _resizing
+                ? Math.Clamp(_dragHeightPhysical + releaseDeltaY, _settings.Preview.MinHeight, _settings.Preview.MaxHeight)
+                : _dragHeightPhysical;
+        var releasedBounds = GetDropBounds(
+            new PixelRectangle(
+                (int)Math.Round(_dragLeftPhysical + releaseDeltaX),
+                (int)Math.Round(_dragTopPhysical + releaseDeltaY),
+                (int)Math.Round(physicalWidth),
+                (int)Math.Round(physicalHeight)));
+        SetPhysicalWindowBounds(
+            releasedBounds.X,
+            releasedBounds.Y,
+            releasedBounds.Width,
+            releasedBounds.Height);
+        SyncManagedSizeToPhysical();
+        _physicalDragTarget = releasedBounds;
+        _dragSettleTimer.Stop();
+        _dragSettleTimer.Start();
+
+        var systemDpi = PreviewMonitorDpi.GetPrimaryScale();
+        _placement = new PreviewPlacement(
+            releasedBounds.X / systemDpi.X,
+            releasedBounds.Y / systemDpi.Y,
+            releasedBounds.Width / systemDpi.X,
+            releasedBounds.Height / systemDpi.Y);
+        _basePlacement = _placement;
+        SyncOverlay();
+        UpdateThumbnailBounds();
+        _placementChanged(this, _placement);
+    }
+
+    private void OnDragSettleTick(object? sender, EventArgs e)
+    {
+        _dragSettleTimer.Stop();
+        if (_physicalDragTarget is not { } target)
         {
             return;
         }
 
-        if (_settings.Preview.SnapMode == SnapMode.Grid)
-        {
-            var dpi = VisualTreeHelper.GetDpi(this);
-            var rectangle = GridSnapper.Snap(
-                new PreviewPlacement(Left, Top, Width, Height),
-                PreviewPixelSize.ToDip(Math.Max(1, _settings.Preview.GridSizeX), dpi.DpiScaleX),
-                PreviewPixelSize.ToDip(Math.Max(1, _settings.Preview.GridSizeY), dpi.DpiScaleY));
-            var previousWidth = Width;
-            var previousHeight = Height;
-            Left = rectangle.Left;
-            Top = rectangle.Top;
-            Width = Math.Clamp(
-                rectangle.Width,
-                PreviewPixelSize.ToDip(_settings.Preview.MinWidth, dpi.DpiScaleX),
-                PreviewPixelSize.ToDip(_settings.Preview.MaxWidth, dpi.DpiScaleX));
-            Height = Math.Clamp(
-                rectangle.Height,
-                PreviewPixelSize.ToDip(_settings.Preview.MinHeight, dpi.DpiScaleY),
-                PreviewPixelSize.ToDip(_settings.Preview.MaxHeight, dpi.DpiScaleY));
-            if (Width != previousWidth || Height != previousHeight)
-            {
-                _useDefaultPhysicalSize = false;
-            }
-        }
-        else if (_settings.Preview.SnapMode == SnapMode.Edge)
-        {
-            const double threshold = 16;
-            var area = SystemParameters.WorkArea;
-            if (Math.Abs(Left - area.Left) < threshold)
-            {
-                Left = area.Left;
-            }
-            else if (Math.Abs(Left + Width - area.Right) < threshold)
-            {
-                Left = area.Right - Width;
-            }
-
-            if (Math.Abs(Top - area.Top) < threshold)
-            {
-                Top = area.Top;
-            }
-            else if (Math.Abs(Top + Height - area.Bottom) < threshold)
-            {
-                Top = area.Bottom - Height;
-            }
-        }
+        SetPhysicalWindowBounds(target.X, target.Y, target.Width, target.Height);
+        SyncManagedSizeToPhysical();
+        _physicalDragTarget = null;
+        SyncOverlay();
+        UpdateThumbnailBounds();
     }
 
-    private bool TryApplyMonitorSnap()
+    private PixelRectangle GetDropBounds(PixelRectangle bounds)
     {
-        if (_settings.Preview.SnapMode is not (SnapMode.Grid or SnapMode.Edge) ||
-            PresentationSource.FromVisual(this) is null)
-        {
-            return false;
-        }
-
-        var center = PointToScreen(new Point(Width / 2, Height / 2));
-        var monitor = MonitorGeometry.FromPoint(center.X, center.Y);
+        var monitor = MonitorGeometry.FromRectangleCenter(bounds);
         if (monitor is null)
         {
-            return false;
+            return bounds;
         }
 
-        var windowDpi = VisualTreeHelper.GetDpi(this);
-        var topLeft = PointToScreen(new Point(0, 0));
-        var bottomRight = PointToScreen(new Point(Width, Height));
-        var physical = new PixelRectangle(
-            (int)Math.Round(topLeft.X),
-            (int)Math.Round(topLeft.Y),
-            Math.Max(1, (int)Math.Round(bottomRight.X - topLeft.X)),
-            Math.Max(1, (int)Math.Round(bottomRight.Y - topLeft.Y)));
         var snapped = PreviewSnapGeometry.Snap(
-            physical,
+            bounds,
             monitor.WorkArea,
             _settings.Preview.SnapMode,
             _settings.Preview.GridSizeX,
@@ -212,29 +216,53 @@ public sealed partial class PreviewWindow
             _settings.Preview.MaxWidth,
             _settings.Preview.MaxHeight,
             (int)Math.Round(16 * monitor.DpiScaleX));
-        if (snapped == physical)
+        return PreviewSnapGeometry.ConstrainToWorkArea(
+            snapped,
+            monitor.WorkArea,
+            _settings.Display.ExpansionThreshold,
+            keepFullyVisible: true);
+    }
+
+    private void OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_rightDown)
         {
-            return true;
+            return;
         }
 
-        var previousWidth = Width;
-        var previousHeight = Height;
-        Left += (snapped.X - physical.X) / windowDpi.DpiScaleX;
-        Top += (snapped.Y - physical.Y) / windowDpi.DpiScaleY;
-        Width = snapped.Width / windowDpi.DpiScaleX;
-        Height = snapped.Height / windowDpi.DpiScaleY;
-        var sizeChanged = Width != previousWidth || Height != previousHeight;
-        if (sizeChanged)
+        var point = GetPhysicalScreenPoint(e);
+        var deltaX = point.X - _dragStartPhysical.X;
+        var deltaY = point.Y - _dragStartPhysical.Y;
+        var targetLeft = _dragLeftPhysical + deltaX;
+        var targetTop = _dragTopPhysical + deltaY;
+        var targetWidth = _resizing
+            ? Math.Clamp(_dragWidthPhysical + deltaX, _settings.Preview.MinWidth, _settings.Preview.MaxWidth)
+            : _dragWidthPhysical;
+        var targetHeight = _resizing
+            ? Math.Clamp(_dragHeightPhysical + deltaY, _settings.Preview.MinHeight, _settings.Preview.MaxHeight)
+            : _dragHeightPhysical;
+        if (_resizing)
         {
             _useDefaultPhysicalSize = false;
         }
 
-        return true;
+        var target = new PixelRectangle(
+            (int)Math.Round(targetLeft),
+            (int)Math.Round(targetTop),
+            (int)Math.Round(targetWidth),
+            (int)Math.Round(targetHeight));
+        _physicalDragTarget = target;
+        SetPhysicalWindowBounds(target.X, target.Y, target.Width, target.Height);
+
+        e.Handled = true;
     }
+
+    private Point GetPhysicalScreenPoint(MouseEventArgs e) =>
+        PointToScreen(e.GetPosition(this));
 
     private void OnMouseEnter(object sender, MouseEventArgs e)
     {
-        if (_zoomed || _zoomPending || !_settings.Zoom.Enabled || _settings.Display.LockPosition)
+        if (_rightDown || _zoomed || _zoomPending || !_settings.Zoom.Enabled || _settings.Display.LockPosition)
         {
             return;
         }
@@ -265,7 +293,7 @@ public sealed partial class PreviewWindow
 
     private void StartZoom()
     {
-        if (_zoomed || !_settings.Zoom.Enabled || _settings.Display.LockPosition)
+        if (_rightDown || _zoomed || !_settings.Zoom.Enabled || _settings.Display.LockPosition)
         {
             return;
         }

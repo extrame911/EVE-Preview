@@ -45,16 +45,17 @@ public sealed class PreviewPixelSizeTests(WpfApplicationFixture wpf)
                 var primaryScale = PreviewMonitorDpi.GetPrimaryScale();
                 Assert.Equal(dpi.DpiScaleX, primaryScale.X, 3);
                 Assert.Equal(dpi.DpiScaleY, primaryScale.Y, 3);
-                Assert.Equal(320, Math.Round(preview.Width * dpi.DpiScaleX));
-                Assert.Equal(180, Math.Round(preview.Height * dpi.DpiScaleY));
+                var physicalSize = TestWindowGeometry.GetPhysicalSize(preview);
+                Assert.Equal(320, physicalSize.Width);
+                Assert.Equal(180, physicalSize.Height);
 
                 var resized = settings.DeepCopy();
                 resized.Preview.DefaultWidth = 640;
                 resized.Preview.DefaultHeight = 360;
                 preview.ApplyDefaultPhysicalSize(resized);
-                dpi = VisualTreeHelper.GetDpi(preview);
-                Assert.Equal(640, Math.Round(preview.Width * dpi.DpiScaleX));
-                Assert.Equal(360, Math.Round(preview.Height * dpi.DpiScaleY));
+                physicalSize = TestWindowGeometry.GetPhysicalSize(preview);
+                Assert.Equal(640, physicalSize.Width);
+                Assert.Equal(360, physicalSize.Height);
             }
             finally
             {

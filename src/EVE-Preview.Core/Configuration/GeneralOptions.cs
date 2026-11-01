@@ -20,6 +20,7 @@ public sealed class GeneralOptions
     public bool MinimizeToTray { get; set; } = true;
     public bool CloseToTray { get; set; } = true;
     public bool MinimizeInactiveClients { get; set; }
+    public bool AutoRestoreClientWindowOnStartup { get; set; } = true;
     public bool UseWindowAnimations { get; set; } = true;
 }
 

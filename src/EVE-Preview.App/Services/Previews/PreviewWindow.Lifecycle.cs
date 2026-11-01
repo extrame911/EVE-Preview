@@ -1,3 +1,5 @@
+using System.Windows.Interop;
+
 namespace EvePreview.App.Services;
 
 public sealed partial class PreviewWindow
@@ -10,12 +12,20 @@ public sealed partial class PreviewWindow
         }
 
         _disposed = true;
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != 0)
+        {
+            HwndSource.FromHwnd(handle)?.RemoveHook(NativeMessageHook);
+        }
+
         _activeHideTimer.Stop();
         _activeHideTimer.Tick -= OnActiveHideTick;
         _focusLostTimer.Stop();
         _focusLostTimer.Tick -= OnFocusLostTick;
         _zoomDelayTimer.Stop();
         _zoomDelayTimer.Tick -= OnZoomDelayTick;
+        _dragSettleTimer.Stop();
+        _dragSettleTimer.Tick -= OnDragSettleTick;
         var timer = _gdiTimer;
         _gdiTimer = null;
         if (timer is not null)

@@ -75,6 +75,7 @@ public sealed partial class MainWindowViewModel
         _settings.General.MinimizeToTray = SystemSettings.MinimizeToTray;
         _settings.General.CloseToTray = SystemSettings.CloseToTray;
         _settings.General.MinimizeInactiveClients = SystemSettings.MinimizeInactiveClients;
+        _settings.General.AutoRestoreClientWindowOnStartup = SystemSettings.AutoRestoreClientWindowOnStartup;
         _settings.General.UseWindowAnimations = SystemSettings.EnableWindowAnimations;
         _settings.Monitoring.ProcessNames = SystemSettings.ExecutableNames
             .Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

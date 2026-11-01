@@ -30,7 +30,7 @@ public sealed partial class ClientPreviewRuntime
         CancellationToken cancellationToken = default)
     {
         return await _dispatcher.InvokeAsync(
-            () => ApplyClientWindowLayoutCoreAsync(originalWindowTitle, cancellationToken),
+            () => ApplySavedClientWindowLayoutAsync(originalWindowTitle, automatic: false, cancellationToken),
             DispatcherPriority.Normal,
             cancellationToken).Task.Unwrap().ConfigureAwait(false);
     }
@@ -113,15 +113,33 @@ public sealed partial class ClientPreviewRuntime
         _ = ApplySavedClientWindowLayoutOnLoginAsync(title);
     }
 
+    private async Task<bool> ApplySavedClientWindowLayoutAsync(
+        string originalWindowTitle,
+        bool automatic,
+        CancellationToken cancellationToken)
+    {
+        if (automatic && !_settings.General.AutoRestoreClientWindowOnStartup)
+        {
+            return false;
+        }
+
+        return await ApplyClientWindowLayoutCoreAsync(originalWindowTitle, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task ApplySavedClientWindowLayoutOnLoginAsync(string originalWindowTitle)
     {
         try
         {
-            await ApplyClientWindowLayoutCoreAsync(originalWindowTitle, CancellationToken.None);
+            await ApplySavedClientWindowLayoutAsync(
+                originalWindowTitle,
+                automatic: true,
+                CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            await ReportErrorAsync($"自动应用客户端窗口位置失败：{exception.Message}", CancellationToken.None);
+            await ReportErrorAsync($"自动应用客户端窗口位置失败：{exception.Message}", CancellationToken.None)
+                .ConfigureAwait(false);
         }
     }
 
