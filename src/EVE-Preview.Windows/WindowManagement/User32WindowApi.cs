@@ -6,6 +6,7 @@ internal interface IUser32Native
 {
     bool IsWindow(nint windowHandle);
     bool IsIconic(nint windowHandle);
+    bool IsZoomed(nint windowHandle);
     int GetWindowProcessId(nint windowHandle);
     bool TryGetWindowBounds(nint windowHandle, out WindowBounds bounds);
     nint GetForegroundWindow();
@@ -83,7 +84,17 @@ public sealed class User32WindowApi : IWindowApi
         return WindowOperationResult.Success();
     }
 
-    public WindowOperationResult Restore(nint windowHandle) => SendSysCommand(windowHandle, ScRestore);
+    public WindowOperationResult Restore(nint windowHandle)
+    {
+        if (!native.IsWindow(windowHandle))
+        {
+            return WindowOperationResult.Failure(WindowOperationError.InvalidWindow);
+        }
+
+        return native.IsIconic(windowHandle) || native.IsZoomed(windowHandle)
+            ? SendSysCommand(windowHandle, ScRestore)
+            : WindowOperationResult.Success();
+    }
 
     public WindowOperationResult Minimize(nint windowHandle) => SendSysCommand(windowHandle, ScMinimize);
 

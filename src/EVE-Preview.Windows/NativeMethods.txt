@@ -2,6 +2,7 @@ GetForegroundWindow
 SetForegroundWindow
 IsWindow
 IsIconic
+IsZoomed
 GetWindowThreadProcessId
 SendMessageTimeout
 SetWindowPos

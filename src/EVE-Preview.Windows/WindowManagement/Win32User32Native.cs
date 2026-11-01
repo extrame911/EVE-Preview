@@ -12,6 +12,7 @@ internal sealed class Win32User32Native : IUser32Native
     public bool IsWindow(nint windowHandle) => PInvoke.IsWindow(new HWND(windowHandle));
 
     public bool IsIconic(nint windowHandle) => PInvoke.IsIconic(new HWND(windowHandle));
+    public bool IsZoomed(nint windowHandle) => PInvoke.IsZoomed(new HWND(windowHandle));
 
     public int GetWindowProcessId(nint windowHandle)
     {

@@ -36,8 +36,42 @@ public sealed class User32WindowApiTests
         Assert.Equal(500u, native.SysCommandTimeout);
     }
 
+    [Fact]
+    public void Restore_does_not_disturb_a_normal_window()
+    {
+        var native = new FakeUser32Native();
+        var api = new User32WindowApi(native);
+
+        var result = api.Restore((nint)123);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal((nint)0, native.SysCommand);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void Restore_sends_sys_command_for_minimized_or_maximized_windows(
+        bool minimized,
+        bool maximized)
+    {
+        var native = new FakeUser32Native
+        {
+            Minimized = minimized,
+            Maximized = maximized
+        };
+        var api = new User32WindowApi(native);
+
+        var result = api.Restore((nint)123);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal((nint)0xF120, native.SysCommand);
+    }
+
     private sealed class FakeUser32Native : IUser32Native
     {
+        public bool Minimized { get; set; }
+        public bool Maximized { get; set; }
         public nint ActivationAttempt { get; private set; }
         public nint ForegroundWindow { get; set; }
         public bool SetForegroundWindowResult { get; set; } = true;
@@ -46,7 +80,8 @@ public sealed class User32WindowApiTests
         public uint SysCommandTimeout { get; private set; }
 
         public bool IsWindow(nint windowHandle) => true;
-        public bool IsIconic(nint windowHandle) => false;
+        public bool IsIconic(nint windowHandle) => Minimized;
+        public bool IsZoomed(nint windowHandle) => Maximized;
         public int GetWindowProcessId(nint windowHandle) => 42;
         public bool TryGetWindowBounds(nint windowHandle, out WindowBounds bounds)
         {

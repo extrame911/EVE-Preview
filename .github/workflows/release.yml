@@ -52,17 +52,16 @@ jobs:
           $notes = @'
           ## Changes
 
-          - Improved continuous right-button dragging across mixed-DPI monitors, including mouse-capture recovery.
-          - Kept preview dimensions at fixed physical pixels during monitor transitions with native window-size locking.
-          - Added matching DPI compensation for the independent title/highlight overlay to reduce text and border flicker.
-          - Standardized center-point monitor selection for drag/drop, placement restore, and layout positioning.
-          - Applied monitor DPI consistently to preview size, grid spacing, and off-screen margin settings.
-          - Added regression coverage for native window geometry, drag interruption, overlay sizing, and mixed-DPI placement.
+          - Fixed applying saved client window layouts when the window has a negative X coordinate.
+          - Normal windows are no longer sent an unnecessary restore command before their saved position is applied.
+          - Saved negative coordinates are now applied exactly, without being clamped to zero.
+          - Minimized and maximized clients are still restored before their saved layout is applied.
+          - Added regression coverage for normal-window restore behavior and exact negative-coordinate application.
 
           ## Verification
 
           - Release build with warnings treated as errors: passed.
-          - Automated tests: 314 passed, 0 failed.
+          - Automated tests: 317 passed, 0 failed.
           - DESIGN.md validation: passed locally.
 
           ## Download
