@@ -27,7 +27,7 @@ jobs:
         run: dotnet build EVE-Preview.sln -c Release --no-restore -warnaserror
 
       - name: Test
-        run: dotnet test EVE-Preview.sln -c Release --no-build
+        run: dotnet test EVE-Preview.sln -c Release --no-build --logger GitHubActions
 
       - name: Publish single-file application
         run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts
