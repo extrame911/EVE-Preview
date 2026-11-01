@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-test-release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore EVE-Preview.sln
+
+      - name: Build
+        run: dotnet build EVE-Preview.sln -c Release --no-restore -warnaserror
+
+      - name: Test
+        run: dotnet test EVE-Preview.sln -c Release --no-build
+
+      - name: Publish single-file application
+        run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts
+
+      - name: Create checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash artifacts/EVE-Preview.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path artifacts/SHA256SUMS.txt -Value "$hash *EVE-Preview.exe" -Encoding ascii
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @'
+          ## Changes
+
+          - Improved continuous right-button dragging across mixed-DPI monitors, including mouse-capture recovery.
+          - Kept preview dimensions at fixed physical pixels during monitor transitions with native window-size locking.
+          - Added matching DPI compensation for the independent title/highlight overlay to reduce text and border flicker.
+          - Standardized center-point monitor selection for drag/drop, placement restore, and layout positioning.
+          - Applied monitor DPI consistently to preview size, grid spacing, and off-screen margin settings.
+          - Added regression coverage for native window geometry, drag interruption, overlay sizing, and mixed-DPI placement.
+
+          ## Verification
+
+          - Release build with warnings treated as errors: passed.
+          - Automated tests: 314 passed, 0 failed.
+          - DESIGN.md validation: passed locally.
+
+          ## Download
+
+          `EVE-Preview.exe` is a self-contained Windows x64 single-file build. No .NET installation is required. Verify the download with `SHA256SUMS.txt`.
+          '@
+          gh release create "$env:GITHUB_REF_NAME" --verify-tag --title "EVE-Preview $env:GITHUB_REF_NAME" --notes $notes artifacts/EVE-Preview.exe artifacts/SHA256SUMS.txt
