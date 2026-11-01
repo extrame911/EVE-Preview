@@ -27,7 +27,13 @@ jobs:
         run: dotnet build EVE-Preview.sln -c Release --no-restore -warnaserror
 
       - name: Test
-        run: dotnet test EVE-Preview.sln -c Release --no-build --logger GitHubActions
+        shell: pwsh
+        run: |
+          dotnet test EVE-Preview.sln -c Release --no-build --logger "console;verbosity=normal" *> test-output.log
+          $testExitCode = $LASTEXITCODE
+          "## Test output" | Add-Content $env:GITHUB_STEP_SUMMARY
+          Get-Content test-output.log -Tail 250 | Out-String | Add-Content $env:GITHUB_STEP_SUMMARY
+          exit $testExitCode
 
       - name: Publish single-file application
         run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts
