@@ -221,7 +221,10 @@ public sealed partial class ClientPreviewRuntime : IPreviewRuntime, IPreviewRunt
             _lifetime?.Dispose();
             _lifetime = null;
             _pollTask = null;
-            PublishSnapshot(null);
+            await _dispatcher.InvokeAsync(
+                () => PublishSnapshot(null),
+                DispatcherPriority.Background,
+                CancellationToken.None).Task.ConfigureAwait(false);
         }
         finally
         {

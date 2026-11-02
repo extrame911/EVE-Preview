@@ -48,6 +48,8 @@ public sealed class WpfApplicationFixture : IDisposable
 
     private Dispatcher Dispatcher { get; set; } = null!;
 
+    public bool IsOnDispatcher => Dispatcher.CheckAccess();
+
     public void Invoke(Action action)
     {
         var operation = Dispatcher.InvokeAsync(action);

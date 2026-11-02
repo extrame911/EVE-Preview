@@ -175,7 +175,54 @@ public sealed partial class ClientPreviewRuntime
                 new WindowBounds(saved.X, saved.Y, saved.Width, saved.Height),
                 ExpectedProcessId: preview.Client.ProcessId),
             cancellationToken);
-        return moved.Succeeded;
+        if (!moved.Succeeded)
+        {
+            return false;
+        }
+
+        return await VerifySavedClientWindowBoundsAsync(
+            preview.Client.MainWindowHandle,
+            saved,
+            cancellationToken);
+    }
+
+    private async Task<bool> VerifySavedClientWindowBoundsAsync(
+        nint windowHandle,
+        PixelRectangle saved,
+        CancellationToken cancellationToken)
+    {
+        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        var target = new WindowBounds(saved.X, saved.Y, saved.Width, saved.Height);
+        var targetMonitor = MonitorGeometry.FromRectangleCenter(saved);
+        if (_windowQueue is not null &&
+            _windowQueue.TryGetWindowBounds(windowHandle, out var actual) &&
+            actual == target &&
+            IsOnTargetMonitor(actual, targetMonitor))
+        {
+            return true;
+        }
+
+        _lastError = "应用窗口布局后，客户端窗口尺寸或所属显示器与保存值不一致。";
+        await _dispatcher.InvokeAsync(
+            () => PublishSnapshot(null),
+            DispatcherPriority.Background,
+            cancellationToken).Task.ConfigureAwait(false);
+        return false;
+    }
+
+    private static bool IsOnTargetMonitor(WindowBounds bounds, MonitorGeometry? targetMonitor)
+    {
+        if (targetMonitor is null)
+        {
+            return true;
+        }
+
+        var actualMonitor = MonitorGeometry.FromRectangleCenter(
+            new PixelRectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height));
+        return actualMonitor is not null &&
+               actualMonitor.WorkArea == targetMonitor.WorkArea &&
+               Math.Abs(actualMonitor.DpiScaleX - targetMonitor.DpiScaleX) < 0.001 &&
+               Math.Abs(actualMonitor.DpiScaleY - targetMonitor.DpiScaleY) < 0.001;
     }
 
 }

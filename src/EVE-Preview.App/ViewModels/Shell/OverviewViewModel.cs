@@ -22,6 +22,8 @@ public sealed partial class OverviewViewModel : ObservableObject
     [ObservableProperty]
     private PreviewServiceState _serviceState = PreviewServiceState.Stopped;
 
+    public bool IsPreviewOff => ServiceState is PreviewServiceState.Stopped or PreviewServiceState.Faulted;
+
     [ObservableProperty]
     private int _clientCount;
 
@@ -38,21 +40,24 @@ public sealed partial class OverviewViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ServiceStatusText));
         OnPropertyChanged(nameof(TogglePreviewText));
+        OnPropertyChanged(nameof(TogglePreviewToolTip));
+        OnPropertyChanged(nameof(IsPreviewOff));
     }
 
     public string ServiceStatusText => LocalizationManager.Translate(ServiceState switch
     {
-        PreviewServiceState.Stopped => "服务已停止",
+        PreviewServiceState.Stopped => "预览关闭",
         PreviewServiceState.Starting => "服务正在启动",
         PreviewServiceState.Running => "预览运行中",
         PreviewServiceState.Paused => "预览已暂停",
         PreviewServiceState.Stopping => "服务正在停止",
-        PreviewServiceState.Faulted => "服务需要处理",
+        PreviewServiceState.Faulted => "预览关闭",
         _ => throw new ArgumentOutOfRangeException()
     });
 
     public string TogglePreviewText => LocalizationManager.Translate(
-        ServiceState == PreviewServiceState.Running
-            ? "暂停预览"
-            : ServiceState == PreviewServiceState.Paused ? "恢复预览" : "启动预览");
+        ServiceState == PreviewServiceState.Running ? "停止预览" : "启动预览");
+
+    public string TogglePreviewToolTip => LocalizationManager.Translate(
+        ServiceState == PreviewServiceState.Running ? "停止客户端预览" : "启动客户端预览");
 }

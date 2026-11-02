@@ -3,7 +3,7 @@
                     xmlns:vm="clr-namespace:EvePreview.App.ViewModels"
                     xmlns:controls="clr-namespace:EvePreview.App.Controls">
     <DataTemplate DataType="{x:Type vm:OverviewViewModel}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+        <ScrollViewer VerticalScrollBarVisibility="Visible" Background="Transparent">
             <StackPanel>
                 <controls:CutCornerPanel Style="{StaticResource StatusCardStyle}">
                     <StackPanel>
@@ -15,18 +15,20 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Border Background="{StaticResource SuccessBrush}" />
+                            <Border x:Name="ServiceStatusAccent" Background="{StaticResource SuccessBrush}" />
                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                 <TextBlock Text="运行状态" FontSize="12" Foreground="{StaticResource SecondaryBrush}" TextWrapping="NoWrap" />
-                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="18" Foreground="{StaticResource SuccessBrush}" Margin="0,3,0,0" TextWrapping="NoWrap" />
+                                <TextBlock x:Name="ServiceStatusValue" Text="{Binding ServiceStatusText}" FontSize="18" Foreground="{StaticResource SuccessBrush}" Margin="0,3,0,0" TextWrapping="NoWrap" />
                             </StackPanel>
                             <StackPanel Grid.Column="3" VerticalAlignment="Center">
                                 <TextBlock Text="检测到客户端" FontSize="12" Foreground="{StaticResource SecondaryBrush}" TextWrapping="NoWrap" />
                                 <TextBlock Text="{Binding ClientCount}" FontSize="18" Margin="0,3,0,0" TextWrapping="NoWrap" />
                             </StackPanel>
-                            <Button ToolTip="{Binding Source=启动、暂停或恢复客户端预览。, Converter={StaticResource LocalizationConverter}}" Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0"
-                                    Style="{StaticResource PrimaryButtonStyle}" Content="{Binding TogglePreviewText}"
-                                    Command="{Binding DataContext.TogglePreviewCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            <Button ToolTip="{Binding TogglePreviewToolTip}" Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding DataContext.TogglePreviewCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <TextBlock Text="{Binding TogglePreviewText}" TextWrapping="NoWrap" />
+                            </Button>
                         </Grid>
                         <Border BorderBrush="#59203543" BorderThickness="0,1,0,0" Margin="16,0" Padding="0,11">
                             <Grid>
@@ -63,12 +65,12 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Style="{StaticResource ClientCardStyle}" MinHeight="112">
+                                    <Border Style="{StaticResource ClientCardStyle}" MinHeight="92">
                                         <Grid>
-                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                             <TextBlock Text="{Binding CharacterName}" FontSize="17" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                                             <TextBlock Grid.Row="1" Text="{Binding ServerName}" Style="{StaticResource CaptionTextStyle}" Margin="0,2,0,0" TextWrapping="NoWrap" />
-                                            <TextBlock Grid.Row="2" Margin="0,12,0,0" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Bottom" TextWrapping="NoWrap">
+                                            <TextBlock Grid.Row="2" Margin="0,6,0,0" Style="{StaticResource CaptionTextStyle}" TextWrapping="NoWrap">
                                                 <Run Text="{Binding ActivityText}" /><Run Text=" · " />
                                                 <Run Text="{Binding VisibilityText}" /><Run Text=" · " />
                                                 <Run Text="{Binding CycleStatusText}" />
@@ -83,6 +85,10 @@
             </StackPanel>
         </ScrollViewer>
         <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding IsPreviewOff}" Value="True">
+                <Setter TargetName="ServiceStatusAccent" Property="Background" Value="{StaticResource SecondaryBrush}" />
+                <Setter TargetName="ServiceStatusValue" Property="Foreground" Value="{StaticResource SecondaryBrush}" />
+            </DataTrigger>
             <DataTrigger Binding="{Binding Clients.Count}" Value="0"><Setter TargetName="EmptyClients" Property="Visibility" Value="Visible" /></DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>

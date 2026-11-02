@@ -187,7 +187,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task TogglePreviewAsync()
     {
         try
@@ -208,8 +208,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
                     Overview.ServiceState = PreviewServiceState.Running;
                     break;
                 case PreviewServiceState.Running:
-                    await _runtime.PauseAsync();
-                    Overview.ServiceState = PreviewServiceState.Paused;
+                    await StopPreviewAsync();
                     break;
                 case PreviewServiceState.Paused:
                     await _runtime.ResumeAsync();

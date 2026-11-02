@@ -62,16 +62,39 @@ internal sealed class Win32User32Native : IUser32Native
             : new NativeMessageResult(true, null);
     }
 
-    public bool SetWindowPosition(nint windowHandle, WindowBounds bounds) =>
-        PInvoke.SetWindowPos(
-            new HWND(windowHandle),
-            new HWND(0),
-            bounds.X,
-            bounds.Y,
-            bounds.Width,
-            bounds.Height,
-            SET_WINDOW_POS_FLAGS.SWP_NOZORDER |
-            SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE |
-            SET_WINDOW_POS_FLAGS.SWP_ASYNCWINDOWPOS |
-            SET_WINDOW_POS_FLAGS.SWP_NOSENDCHANGING);
+    public bool SetWindowPosition(nint windowHandle, WindowBounds bounds)
+    {
+        // The window-operation queue runs on a per-monitor-aware thread. Passing native
+        // pixel rectangles from that context makes Windows/EVE apply a per-monitor DPI
+        // adjustment when the window is near a negative-coordinate monitor seam. Apply
+        // the saved native rectangle from a system-aware context instead, then restore
+        // the worker thread's original awareness.
+        var previousContext = SetThreadDpiAwarenessContext(SystemAwareDpiContext);
+        try
+        {
+            return PInvoke.SetWindowPos(
+                new HWND(windowHandle),
+                new HWND(0),
+                bounds.X,
+                bounds.Y,
+                bounds.Width,
+                bounds.Height,
+                SET_WINDOW_POS_FLAGS.SWP_NOZORDER |
+                SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE |
+                SET_WINDOW_POS_FLAGS.SWP_ASYNCWINDOWPOS |
+                SET_WINDOW_POS_FLAGS.SWP_NOSENDCHANGING);
+        }
+        finally
+        {
+            if (previousContext != 0)
+            {
+                _ = SetThreadDpiAwarenessContext(previousContext);
+            }
+        }
+    }
+
+    private const nint SystemAwareDpiContext = -2;
+
+    [DllImport("user32.dll")]
+    private static extern nint SetThreadDpiAwarenessContext(nint dpiContext);
 }

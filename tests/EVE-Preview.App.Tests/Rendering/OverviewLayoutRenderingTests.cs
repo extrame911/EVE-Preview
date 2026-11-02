@@ -62,6 +62,7 @@ public sealed class OverviewLayoutRenderingTests(WpfApplicationFixture wpf)
                     .ToArray();
                 Assert.Equal(3, cards.Length);
                 Assert.Equal(240, cards[0].ActualWidth);
+                Assert.InRange(cards[0].ActualHeight, 86, 96);
                 var positions = cards.Select(card => card.TransformToAncestor(items).Transform(new Point())).ToArray();
                 var firstRowCount = positions.Count(point => Math.Abs(point.Y - positions[0].Y) < 1);
                 Assert.Equal(2, firstRowCount);
@@ -115,6 +116,14 @@ public sealed class OverviewLayoutRenderingTests(WpfApplicationFixture wpf)
                 var contents = FindDescendants<Button>(window).Select(button => button.Content as string).ToArray();
                 Assert.DoesNotContain("刷新最小化客户端", contents);
                 Assert.Equal(1, contents.Count(content => content == "保存所有窗口位置"));
+                var toggle = FindDescendants<Button>(window).Single(button => Equals((button.Content as TextBlock)?.Text, "启动预览"));
+                Assert.Equal("启动客户端预览", toggle.ToolTip as string);
+                Assert.NotNull(toggle.Command);
+                Assert.True(toggle.Command.CanExecute(null));
+                var scrollViewer = FindDescendants<ScrollViewer>(window).Single();
+                Assert.Equal(ScrollBarVisibility.Visible, scrollViewer.VerticalScrollBarVisibility);
+                var status = FindDescendants<TextBlock>(window).Single(text => text.Text == "预览关闭");
+                Assert.Same(application.Resources["SecondaryBrush"], status.Foreground);
             }
             finally
             {

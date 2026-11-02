@@ -107,7 +107,7 @@ public partial class App : Application
         {
             if (args.PropertyName == nameof(MainWindowViewModel.ServiceStatusText))
             {
-                _trayIcon?.SetPaused(viewModel.Overview.ServiceState == PreviewServiceState.Paused);
+                _trayIcon?.SetPreviewRunning(viewModel.Overview.ServiceState == PreviewServiceState.Running);
             }
         };
 

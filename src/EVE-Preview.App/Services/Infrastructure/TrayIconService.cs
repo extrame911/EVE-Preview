@@ -24,7 +24,7 @@ public sealed class TrayIconService : IDisposable
         var contextMenu = new ContextMenuStrip();
         var showItem = new ToolStripMenuItem("显示主窗口");
         showItem.Click += (_, _) => showMainWindow();
-        _togglePreviewItem = new ToolStripMenuItem("暂停预览");
+        _togglePreviewItem = new ToolStripMenuItem("启动预览");
         _togglePreviewItem.Click += (_, _) => _ = TogglePreviewSafelyAsync();
         var exitItem = new ToolStripMenuItem("退出");
         exitItem.Click += (_, _) => exit();
@@ -43,9 +43,9 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.DoubleClick += (_, _) => showMainWindow();
     }
 
-    public void SetPaused(bool paused)
+    public void SetPreviewRunning(bool running)
     {
-        _togglePreviewItem.Text = paused ? "恢复预览" : "暂停预览";
+        _togglePreviewItem.Text = running ? "停止预览" : "启动预览";
     }
 
     private async Task TogglePreviewSafelyAsync()

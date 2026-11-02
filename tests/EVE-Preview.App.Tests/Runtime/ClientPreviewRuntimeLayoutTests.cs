@@ -12,6 +12,81 @@ namespace EvePreview.App.Tests;
 public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
 {
     [Fact]
+    public void Stop_publishes_the_empty_snapshot_on_the_wpf_dispatcher()
+    {
+        wpf.Invoke(async () =>
+        {
+            var settings = new AppSettings();
+            var queue = new FakeWindowOperationQueue();
+            var storePath = Path.Combine(AppContext.BaseDirectory, $"stop-snapshot-test-{Guid.NewGuid():N}.json");
+            var runtime = new ClientPreviewRuntime(settings, new JsonSettingsStore(storePath), queue);
+            try
+            {
+                AddPreview(runtime, settings, 1, 101, "EVE - Alpha");
+                typeof(ClientPreviewRuntime)
+                    .GetField("_started", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(runtime, true);
+                bool? publishedOnDispatcher = null;
+                runtime.SnapshotChanged += (_, snapshot) =>
+                {
+                    if (snapshot.Clients.Count == 0)
+                    {
+                        publishedOnDispatcher = wpf.IsOnDispatcher;
+                    }
+                };
+
+                await runtime.StopAsync();
+
+                Assert.True(publishedOnDispatcher);
+            }
+            finally
+            {
+                runtime.Dispose();
+                DeleteStoreFiles(storePath);
+            }
+        });
+    }
+
+    [Fact]
+    public void Manual_apply_reports_a_client_adjusted_bounds_without_resubmitting()
+    {
+        wpf.Invoke(async () =>
+        {
+            const string characterTitle = "EVE - Alpha";
+            var saved = new PixelRectangle(-11, 0, 2586, 1511);
+            var settings = new AppSettings();
+            settings.Clients.Add(new ClientSettings
+            {
+                OriginalTitle = characterTitle,
+                ClientWindowBounds = saved
+            });
+            var queue = new FakeWindowOperationQueue
+            {
+                FirstMoveBounds = new WindowBounds(-14, 0, 2589, 2014)
+            };
+            queue.Bounds[101] = new WindowBounds(0, 0, 2200, 1300);
+            var storePath = Path.Combine(AppContext.BaseDirectory, $"layout-test-{Guid.NewGuid():N}.json");
+            var runtime = new ClientPreviewRuntime(settings, new JsonSettingsStore(storePath), queue);
+            try
+            {
+                AddPreview(runtime, settings, 1, 101, characterTitle);
+                queue.Requests.Clear();
+
+                var applied = await runtime.ApplyClientWindowLayoutAsync(characterTitle);
+
+                Assert.False(applied);
+                Assert.Equal(new WindowBounds(-14, 0, 2589, 2014), queue.Bounds[101]);
+                Assert.Single(queue.Requests, request => request.Kind == WindowOperationKind.MoveResize);
+            }
+            finally
+            {
+                runtime.Dispose();
+                DeleteStoreFiles(storePath);
+            }
+        });
+    }
+
+    [Fact]
     public void Save_all_running_clients_persists_readable_windows_and_skips_minimized()
     {
         wpf.Invoke(async () =>
@@ -306,6 +381,8 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
         public Dictionary<nint, WindowBounds> Bounds { get; } = [];
         public HashSet<nint> Minimized { get; } = [];
         public List<WindowOperationRequest> Requests { get; } = [];
+        public WindowBounds? FirstMoveBounds { get; init; }
+        private int _moveCount;
 
         public nint GetForegroundWindow() => 0;
         public bool IsMinimized(nint windowHandle) => Minimized.Contains(windowHandle);
@@ -318,6 +395,14 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
             CancellationToken cancellationToken = default)
         {
             Requests.Add(request);
+            if (request.Kind == WindowOperationKind.MoveResize && request.Bounds is { } requested)
+            {
+                _moveCount++;
+                Bounds[request.WindowHandle] = _moveCount == 1 && FirstMoveBounds is { } distorted
+                    ? distorted
+                    : requested;
+            }
+
             return Task.FromResult(WindowOperationResult.Success());
         }
 

@@ -10,7 +10,7 @@ public sealed class OverviewViewModelTests
         var viewModel = new OverviewViewModel();
 
         Assert.Equal(PreviewServiceState.Stopped, viewModel.ServiceState);
-        Assert.Equal("服务已停止", viewModel.ServiceStatusText);
+        Assert.Equal("预览关闭", viewModel.ServiceStatusText);
         Assert.Equal("启动预览", viewModel.TogglePreviewText);
         Assert.Equal(0, viewModel.ClientCount);
         Assert.Equal("未检测到客户端", viewModel.ActiveClientText);
@@ -18,13 +18,14 @@ public sealed class OverviewViewModelTests
     }
 
     [Theory]
-    [InlineData(PreviewServiceState.Running, "预览运行中", "暂停预览")]
-    [InlineData(PreviewServiceState.Paused, "预览已暂停", "恢复预览")]
-    [InlineData(PreviewServiceState.Faulted, "服务需要处理", "启动预览")]
+    [InlineData(PreviewServiceState.Running, "预览运行中", "停止预览", "停止客户端预览")]
+    [InlineData(PreviewServiceState.Paused, "预览已暂停", "启动预览", "启动客户端预览")]
+    [InlineData(PreviewServiceState.Faulted, "预览关闭", "启动预览", "启动客户端预览")]
     public void Service_state_updates_status_and_primary_action(
         PreviewServiceState state,
         string status,
-        string action)
+        string action,
+        string tooltip)
     {
         var viewModel = new OverviewViewModel();
         var changedProperties = new List<string>();
@@ -34,7 +35,9 @@ public sealed class OverviewViewModelTests
 
         Assert.Equal(status, viewModel.ServiceStatusText);
         Assert.Equal(action, viewModel.TogglePreviewText);
+        Assert.Equal(tooltip, viewModel.TogglePreviewToolTip);
         Assert.Contains(nameof(OverviewViewModel.ServiceStatusText), changedProperties);
         Assert.Contains(nameof(OverviewViewModel.TogglePreviewText), changedProperties);
+        Assert.Contains(nameof(OverviewViewModel.TogglePreviewToolTip), changedProperties);
     }
 }

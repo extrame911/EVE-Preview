@@ -66,10 +66,12 @@ public sealed class MainWindowViewModelTests
         var viewModel = new MainWindowViewModel(runtime);
 
         await viewModel.TogglePreviewCommand.ExecuteAsync(null);
+        await viewModel.TogglePreviewCommand.ExecuteAsync(null);
 
         Assert.Equal(1, runtime.StartCalls);
-        Assert.Equal(PreviewServiceState.Running, viewModel.Overview.ServiceState);
-        Assert.Equal("预览运行中", viewModel.ServiceStatusText);
+        Assert.Equal(1, runtime.StopCalls);
+        Assert.Equal(PreviewServiceState.Stopped, viewModel.Overview.ServiceState);
+        Assert.Equal("启动预览", viewModel.Overview.TogglePreviewText);
     }
 
     [Fact]
@@ -111,6 +113,7 @@ public sealed class MainWindowViewModelTests
     private sealed class RecordingRuntime : IPreviewRuntime
     {
         public int StartCalls { get; private set; }
+        public int StopCalls { get; private set; }
         public Exception? StartException { get; init; }
 
         public Task StartAsync(CancellationToken cancellationToken = default)
@@ -121,6 +124,10 @@ public sealed class MainWindowViewModelTests
 
         public Task PauseAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task ResumeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken = default)
+        {
+            StopCalls++;
+            return Task.CompletedTask;
+        }
     }
 }
