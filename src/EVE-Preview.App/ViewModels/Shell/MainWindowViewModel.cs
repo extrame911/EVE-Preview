@@ -106,6 +106,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public SystemSettingsViewModel SystemSettings { get; }
     public AppSettings Settings => _settings;
     public string BuildDate => BuildInfo.BuildDate;
+    public string Version => BuildInfo.Version;
 
     public string ServiceStatusText => string.IsNullOrWhiteSpace(LastError)
         ? Overview.ServiceStatusText

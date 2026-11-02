@@ -52,19 +52,16 @@ jobs:
           $notes = @'
           ## Changes
 
-          - Fixed client window layout restoration near negative-coordinate monitor seams by applying saved native bounds from a system-aware DPI context.
-          - Removed the ineffective repeated layout correction; layout application now submits once and validates the resulting window rectangle.
-          - Fixed the preview start/stop button and tooltip so both follow the current runtime state.
-          - Fixed a cross-thread WPF CollectionView error when stopping previews.
-          - Added an always-visible Overview scrollbar and a compact "Preview off" status state with a muted colour.
-          - Reduced client-card height and removed the empty gap above the status line.
+          - Switched all version fields to three-part semantic versions; the fourth zero revision is no longer shown.
+          - Added the running application version after the build date in the bottom-right status bar.
+          - Kept the client window layout DPI fix that restores negative-coordinate windows to their exact saved size.
+          - Retained the state-aware preview start/stop button, always-visible Overview scrollbar, compact cards and grey "Preview off" status.
 
           ## Verification
 
           - Release build with warnings treated as errors: passed.
-          - Automated tests: 319 passed, 0 failed.
+          - Automated tests: 320 passed, 0 failed.
           - DESIGN.md validation: passed locally.
-          - Verified applying a saved (-11, 0, 2586 × 1511) client window restores a 2560 × 1440 client area.
 
           ## Download
 

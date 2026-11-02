@@ -126,7 +126,11 @@
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Text="  |  活动：" TextWrapping="NoWrap" /><TextBlock Style="{StaticResource CaptionTextStyle}" Text="{Binding Overview.ActiveClientText}" TextWrapping="NoWrap" />
                     </StackPanel>
                     <TextBlock Grid.Column="1" Margin="16,0" Style="{StaticResource CaptionTextStyle}" Text="{Binding LastError}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                    <TextBlock Grid.Column="2" Style="{StaticResource CaptionTextStyle}" FontFamily="{StaticResource MonospaceFontFamily}" FontSize="11" Text="{Binding BuildDate}" TextWrapping="NoWrap" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" FontFamily="{StaticResource MonospaceFontFamily}" FontSize="11" Text="{Binding BuildDate}" TextWrapping="NoWrap" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" FontFamily="{StaticResource MonospaceFontFamily}" FontSize="11" Text="  |  " TextWrapping="NoWrap" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" FontFamily="{StaticResource MonospaceFontFamily}" FontSize="11" Text="{Binding Version, StringFormat=v{0}}" TextWrapping="NoWrap" />
+                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>

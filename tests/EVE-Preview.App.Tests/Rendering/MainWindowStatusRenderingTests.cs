@@ -11,7 +11,7 @@ namespace EvePreview.App.Tests;
 public sealed class MainWindowStatusRenderingTests(WpfApplicationFixture wpf)
 {
     [Fact]
-    public void Status_bar_renders_the_build_date_instead_of_the_old_platform_label()
+    public void Status_bar_renders_the_build_date_and_three_part_version()
     {
         wpf.Invoke(() =>
         {
@@ -41,6 +41,8 @@ public sealed class MainWindowStatusRenderingTests(WpfApplicationFixture wpf)
 
                 var texts = FindDescendants<TextBlock>(window).Select(text => text.Text).ToArray();
                 Assert.Contains(viewModel.BuildDate, texts);
+                Assert.Contains($"v{viewModel.Version}", texts);
+                Assert.Matches(@"^\d+\.\d+\.\d+$", viewModel.Version);
                 Assert.DoesNotContain("EVE-PREVIEW / x64", texts);
             }
             finally
