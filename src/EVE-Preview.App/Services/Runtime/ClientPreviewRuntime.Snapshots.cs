@@ -17,24 +17,34 @@ public sealed partial class ClientPreviewRuntime
             _lastError = error;
         }
 
-        var clients = _previews.Values
-            .OrderBy(preview => preview.Client.ProcessId)
-            .Select(preview =>
+        var clients = _knownClients.Values
+            .OrderBy(process => process.ProcessId)
+            .Select(process =>
             {
-                var dpi = VisualTreeHelper.GetDpi(preview);
-                var clientSettings = FindClientSettings(preview.Client.MainWindowTitle);
+                var identity = CreateIdentity(process);
+                _previews.TryGetValue(identity, out var preview);
+                var dpiX = preview is not null
+                    ? VisualTreeHelper.GetDpi(preview).DpiScaleX
+                    : PreviewMonitorDpi.GetPrimaryScale().X;
+                var dpiY = preview is not null
+                    ? VisualTreeHelper.GetDpi(preview).DpiScaleY
+                    : PreviewMonitorDpi.GetPrimaryScale().Y;
+                var clientSettings = FindClientSettings(process.MainWindowTitle);
+                var displayName = string.IsNullOrWhiteSpace(clientSettings?.Alias)
+                    ? process.MainWindowTitle
+                    : clientSettings.Alias;
                 return new PreviewClientStatus(
-                    preview.Identity,
-                    preview.DisplayName,
-                    preview.Client.MainWindowTitle,
-                    preview.Identity == _activeIdentity,
-                    preview.IsPreviewWindowVisible,
+                    identity,
+                    displayName,
+                    process.MainWindowTitle,
+                    identity == _activeIdentity,
+                    preview?.IsPreviewWindowVisible == true,
                     clientSettings?.ExcludeFromCycle == true,
-                    _renamedClientTitles.GetValueOrDefault(preview.Client.MainWindowTitle),
-                    _windowQueue is null || !_windowQueue.IsMinimized(preview.Client.MainWindowHandle),
-                    preview.Placement,
-                    dpi.DpiScaleX,
-                    dpi.DpiScaleY,
+                    _renamedClientTitles.GetValueOrDefault(process.MainWindowTitle),
+                    _windowQueue is null || !_windowQueue.IsMinimized(process.MainWindowHandle),
+                    preview?.Placement ?? clientSettings?.Placement,
+                    dpiX,
+                    dpiY,
                     clientSettings?.Placement is not null);
             })
             .ToArray();

@@ -33,7 +33,6 @@ public sealed partial class PreviewWindow : Window, IDisposable
     private bool _focused;
     private bool _activeHideElapsed;
     private bool _focusLostElapsed;
-    private bool _paused;
     private bool _privacyActive;
     private bool _leftDown;
     private bool _rightDown;

@@ -90,7 +90,7 @@ public sealed partial class PreviewWindow
         var hiddenForLostFocus = _settings.Display.HideOnFocusLoss && !_focused && _focusLostElapsed;
         var hiddenForLogin = ClientWindowTitle.IsLoginWindow(_client.MainWindowTitle);
         var hiddenForClient = clientSettings?.DisablePreview == true;
-        var shouldShow = !_paused && !hiddenForActive && !hiddenForLostFocus &&
+        var shouldShow = !hiddenForActive && !hiddenForLostFocus &&
                          !hiddenForLogin && !hiddenForClient;
         Visibility = shouldShow ? Visibility.Visible : Visibility.Hidden;
     }

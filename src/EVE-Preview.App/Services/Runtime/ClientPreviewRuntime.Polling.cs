@@ -14,7 +14,7 @@ public sealed partial class ClientPreviewRuntime
         {
             var interval = TimeSpan.FromMilliseconds(
                 Math.Clamp(_settings.Monitoring.PollIntervalMs, 100, 2000));
-            if (_paused || DateTime.UtcNow - lastPoll < interval)
+            if (DateTime.UtcNow - lastPoll < interval)
             {
                 continue;
             }
@@ -38,7 +38,7 @@ public sealed partial class ClientPreviewRuntime
 
     private async Task PollOnceAsync(CancellationToken cancellationToken)
     {
-        if (_paused || cancellationToken.IsCancellationRequested)
+        if (cancellationToken.IsCancellationRequested)
         {
             return;
         }
@@ -65,29 +65,37 @@ public sealed partial class ClientPreviewRuntime
 
     private void ApplySnapshots(IReadOnlyList<ProcessSnapshot> rawSnapshots)
     {
-        if (_paused)
-        {
-            return;
-        }
-
         var current = CreateCurrentSnapshots(rawSnapshots);
-        var previous = _previews.Keys
-            .Select(identity => new ClientSnapshot(identity, _previews[identity].Client.MainWindowTitle))
+        var previous = _knownClients.Values
+            .Select(process => new ClientSnapshot(CreateIdentity(process), process.MainWindowTitle))
             .ToArray();
         var diff = _differ.Compare(previous, current);
         foreach (var removed in diff.Removed)
         {
+            _knownClients.Remove(removed.Identity);
             RemovePreview(removed.Identity);
         }
 
         foreach (var added in diff.Added)
         {
-            AddPreview(added, rawSnapshots);
+            var process = FindProcess(rawSnapshots, added.Identity);
+            _knownClients[added.Identity] = process;
+            if (_previewsEnabled)
+            {
+                CreatePreview(process);
+            }
+
+            ApplySavedClientWindowLayoutOnLogin(added.Identity);
         }
 
         foreach (var updated in diff.Updated)
         {
-            UpdatePreviewTitle(updated);
+            var process = FindProcess(rawSnapshots, updated.Identity);
+            var previousTitle = _knownClients.TryGetValue(updated.Identity, out var existing)
+                ? existing.MainWindowTitle
+                : updated.Title;
+            _knownClients[updated.Identity] = process;
+            UpdateClientTitle(updated.Identity, previousTitle, updated.Title);
         }
 
         if (diff.Added.Count > 0 || diff.Removed.Count > 0)
@@ -106,13 +114,20 @@ public sealed partial class ClientPreviewRuntime
         PublishSnapshot(null);
     }
 
+    private static ClientIdentity CreateIdentity(ProcessSnapshot snapshot) =>
+        new(snapshot.ProcessId, snapshot.MainWindowHandle, snapshot.ProcessStartTime.ToUniversalTime());
+
+    private static ProcessSnapshot FindProcess(
+        IReadOnlyList<ProcessSnapshot> snapshots,
+        ClientIdentity identity) =>
+        snapshots.First(snapshot =>
+            snapshot.ProcessId == identity.ProcessId &&
+            snapshot.MainWindowHandle == identity.MainWindowHandle);
+
     private static ClientSnapshot[] CreateCurrentSnapshots(IReadOnlyList<ProcessSnapshot> rawSnapshots) =>
         rawSnapshots
             .Select(snapshot => new ClientSnapshot(
-                new ClientIdentity(
-                    snapshot.ProcessId,
-                    snapshot.MainWindowHandle,
-                    snapshot.ProcessStartTime.ToUniversalTime()),
+                CreateIdentity(snapshot),
                 snapshot.MainWindowTitle))
             .ToArray();
 
@@ -148,31 +163,20 @@ public sealed partial class ClientPreviewRuntime
         }
     }
 
-    private void AddPreview(ClientSnapshot added, IReadOnlyList<ProcessSnapshot> rawSnapshots)
+    private void UpdateClientTitle(ClientIdentity identity, string previousTitle, string currentTitle)
     {
-        var process = rawSnapshots.First(snapshot =>
-            snapshot.ProcessId == added.Identity.ProcessId &&
-            snapshot.MainWindowHandle == added.Identity.MainWindowHandle);
-        CreatePreview(process);
-        ApplySavedClientWindowLayoutOnLogin(added.Identity);
-    }
-
-    private void UpdatePreviewTitle(ClientSnapshot updated)
-    {
-        if (!_previews.TryGetValue(updated.Identity, out var preview))
+        if (_previews.TryGetValue(identity, out var preview))
         {
-            return;
+            preview.UpdateWindowTitle(currentTitle);
+            ApplyPreviewClientSettings(preview);
         }
 
-        var previousTitle = preview.Client.MainWindowTitle;
-        preview.UpdateWindowTitle(updated.Title);
-        if (!string.Equals(previousTitle, updated.Title, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(previousTitle, currentTitle, StringComparison.OrdinalIgnoreCase))
         {
-            MigrateClientTitle(previousTitle, updated.Title);
-            ApplyPreviewClientSettings(preview);
+            MigrateClientTitle(previousTitle, currentTitle);
             if (ClientWindowTitle.IsLoginWindow(previousTitle))
             {
-                ApplySavedClientWindowLayoutOnLogin(updated.Identity);
+                ApplySavedClientWindowLayoutOnLogin(identity);
             }
         }
     }
@@ -205,9 +209,9 @@ public sealed partial class ClientPreviewRuntime
             return;
         }
 
-        var focused = _previews.Values.FirstOrDefault(preview =>
-            preview.Client.MainWindowHandle == foreground);
-        var nextIdentity = focused?.Identity;
+        var focused = _knownClients.Values.FirstOrDefault(process =>
+            process.MainWindowHandle == foreground);
+        var nextIdentity = focused is null ? null : CreateIdentity(focused);
         if (_focusedIdentity == nextIdentity)
         {
             return;
@@ -232,8 +236,8 @@ public sealed partial class ClientPreviewRuntime
             return;
         }
 
-        var visible = _previews.Values
-            .Where(preview => !_windowQueue.IsMinimized(preview.Client.MainWindowHandle))
+        var visible = _knownClients.Values
+            .Where(process => !_windowQueue.IsMinimized(process.MainWindowHandle))
             .ToArray();
         if (visible.Length == 0)
         {
@@ -242,15 +246,15 @@ public sealed partial class ClientPreviewRuntime
         }
 
         if (_activeIdentity is not null &&
-            visible.Any(preview => preview.Identity == _activeIdentity))
+            visible.Any(process => CreateIdentity(process) == _activeIdentity))
         {
             return;
         }
 
         var foreground = _windowQueue.GetForegroundWindow();
-        var foregroundClient = visible.FirstOrDefault(preview =>
-            preview.Client.MainWindowHandle == foreground);
-        SetActiveClient((foregroundClient ?? visible[0]).Identity);
+        var foregroundClient = visible.FirstOrDefault(process =>
+            process.MainWindowHandle == foreground);
+        SetActiveClient(CreateIdentity(foregroundClient ?? visible[0]));
     }
 
     private void SetActiveClient(ClientIdentity? identity)

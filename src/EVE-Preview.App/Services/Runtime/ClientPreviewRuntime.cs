@@ -14,6 +14,7 @@ public sealed partial class ClientPreviewRuntime : IPreviewRuntime, IPreviewRunt
     private readonly ProcessSnapshotMonitor _processMonitor = new();
     private readonly ClientSnapshotDiffer _differ = new();
     private readonly Dictionary<ClientIdentity, PreviewWindow> _previews = [];
+    private readonly Dictionary<ClientIdentity, ProcessSnapshot> _knownClients = [];
     private readonly List<IHotkeyRegistration> _registrations = [];
     private readonly PreviewRuntimeSnapshot _emptySnapshot = new([], null, null, 0, 0);
     private AppSettings _settings;
@@ -26,7 +27,7 @@ public sealed partial class ClientPreviewRuntime : IPreviewRuntime, IPreviewRunt
     private ClientIdentity? _focusedIdentity;
     private nint _previousForeignWindow;
     private int _previousForeignWindowProcessId;
-    private bool _paused;
+    private bool _previewsEnabled;
     private bool _started;
     private bool _disposed;
     private bool _uiResourcesDisposed;
@@ -74,25 +75,39 @@ public sealed partial class ClientPreviewRuntime : IPreviewRuntime, IPreviewRunt
             ThrowIfDisposed();
             if (_started)
             {
-                if (_paused)
-                {
-                    await ResumeCoreAsync(cancellationToken).ConfigureAwait(false);
-                }
+                await _dispatcher.InvokeAsync(
+                    () =>
+                    {
+                        if (_previewsEnabled)
+                        {
+                            return;
+                        }
 
+                        _previewsEnabled = true;
+                        foreach (var process in _knownClients.Values.ToArray())
+                        {
+                            CreatePreview(process);
+                        }
+
+                        RebuildHotkeys();
+                        PublishSnapshot(null);
+                    },
+                    DispatcherPriority.Normal,
+                    cancellationToken).Task.ConfigureAwait(false);
                 return;
             }
 
             await _dispatcher.InvokeAsync(
                 () =>
                 {
-                    _paused = false;
                     _uiResourcesDisposed = false;
                     _lifetime = new CancellationTokenSource();
                     try
                     {
                         EnsureUiServices();
-                        RebuildHotkeys();
+                        _previewsEnabled = true;
                         _started = true;
+                        RebuildHotkeys();
                     }
                     catch
                     {
@@ -114,117 +129,28 @@ public sealed partial class ClientPreviewRuntime : IPreviewRuntime, IPreviewRunt
         }
     }
 
-    public async Task PauseAsync(CancellationToken cancellationToken = default)
-    {
-        ThrowIfDisposed();
-        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (!_started || _paused)
-            {
-                return;
-            }
-
-            await _dispatcher.InvokeAsync(
-                () =>
-                {
-                    _paused = true;
-                    foreach (var preview in _previews.Values)
-                    {
-                        preview.SetPaused(true);
-                    }
-
-                    PublishSnapshot(null);
-                },
-                DispatcherPriority.Normal,
-                cancellationToken).Task.ConfigureAwait(false);
-        }
-        finally
-        {
-            _lifecycleGate.Release();
-        }
-    }
-
-    public async Task ResumeAsync(CancellationToken cancellationToken = default)
-    {
-        ThrowIfDisposed();
-        if (!_started)
-        {
-            await StartAsync(cancellationToken).ConfigureAwait(false);
-            return;
-        }
-
-        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (!_started)
-            {
-                return;
-            }
-
-            await ResumeCoreAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            _lifecycleGate.Release();
-        }
-    }
-
-    private async Task ResumeCoreAsync(CancellationToken cancellationToken)
-    {
-        await _dispatcher.InvokeAsync(
-            () =>
-            {
-                _paused = false;
-                foreach (var preview in _previews.Values)
-                {
-                    preview.SetPaused(false);
-                }
-
-                PublishSnapshot(null);
-            },
-            DispatcherPriority.Normal,
-            cancellationToken).Task.ConfigureAwait(false);
-    }
-
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!_started)
+            if (!_started || !_previewsEnabled)
             {
                 return;
             }
 
-            _started = false;
+            _previewsEnabled = false;
             Interlocked.Increment(ref _saveVersion);
-            _lifetime?.Cancel();
-            var pollTask = _pollTask;
-            if (pollTask is not null)
-            {
-                try
-                {
-                    await pollTask.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is TimeoutException or OperationCanceledException)
-                {
-                }
-            }
-
             await _dispatcher.InvokeAsync(
-                DisposeUiResources,
+                () =>
+                {
+                    DisposePreviewWindows();
+                    PublishSnapshot(null);
+                },
                 DispatcherPriority.Normal,
                 CancellationToken.None).Task.ConfigureAwait(false);
             await SaveSynchronouslyAsync(CancellationToken.None).ConfigureAwait(false);
-            _lifetime?.Dispose();
-            _lifetime = null;
-            _pollTask = null;
-            await _dispatcher.InvokeAsync(
-                () => PublishSnapshot(null),
-                DispatcherPriority.Background,
-                CancellationToken.None).Task.ConfigureAwait(false);
         }
         finally
         {

@@ -19,7 +19,6 @@ public sealed class OverviewViewModelTests
 
     [Theory]
     [InlineData(PreviewServiceState.Running, "预览运行中", "停止预览", "停止客户端预览")]
-    [InlineData(PreviewServiceState.Paused, "预览已暂停", "启动预览", "启动客户端预览")]
     [InlineData(PreviewServiceState.Faulted, "预览关闭", "启动预览", "启动客户端预览")]
     public void Service_state_updates_status_and_primary_action(
         PreviewServiceState state,

@@ -5,7 +5,6 @@ public enum PreviewServiceState
     Stopped,
     Starting,
     Running,
-    Paused,
     Stopping,
     Faulted
 }

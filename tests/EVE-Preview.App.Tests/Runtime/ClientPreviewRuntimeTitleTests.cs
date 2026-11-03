@@ -73,10 +73,14 @@ public sealed class ClientPreviewRuntimeTitleTests(WpfApplicationFixture wpf)
                     .GetField("_previews", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .GetValue(runtime)!;
                 previews.Add(preview.Identity, preview);
+                var knownClients = (Dictionary<ClientIdentity, ProcessSnapshot>)typeof(ClientPreviewRuntime)
+                    .GetField("_knownClients", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(runtime)!;
+                knownClients[preview.Identity] = preview.Client;
 
                 typeof(ClientPreviewRuntime)
-                    .GetMethod("UpdatePreviewTitle", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(runtime, [new ClientSnapshot(preview.Identity, characterTitle)]);
+                    .GetMethod("UpdateClientTitle", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(runtime, [preview.Identity, "EVE", characterTitle]);
 
                 Assert.Equal(120, preview.Placement.Left);
                 Assert.Equal(140, preview.Placement.Top);

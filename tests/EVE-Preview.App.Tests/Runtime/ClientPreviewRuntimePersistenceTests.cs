@@ -288,6 +288,10 @@ public sealed class ClientPreviewRuntimePersistenceTests(WpfApplicationFixture w
             .GetField("_previews", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .GetValue(runtime)!;
         previews.Add(preview.Identity, preview);
+        var knownClients = (Dictionary<ClientIdentity, ProcessSnapshot>)typeof(ClientPreviewRuntime)
+            .GetField("_knownClients", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(runtime)!;
+        knownClients[preview.Identity] = preview.Client;
     }
 
     private sealed class FakeWindowOperationQueue : EvePreview.Windows.IWindowOperationQueue

@@ -12,9 +12,9 @@ public sealed partial class ClientPreviewRuntime
         }
 
         var groupSettings = _settings.CycleGroups[groupIndex];
-        var availableClients = _previews.Values.Select(preview => new CycleEntry(
-            new ClientSnapshot(preview.Identity, preview.Client.MainWindowTitle),
-            FindClientSettings(preview.Client.MainWindowTitle)?.ExcludeFromCycle == true));
+        var availableClients = _knownClients.Values.Select(process => new CycleEntry(
+            new ClientSnapshot(CreateIdentity(process), process.MainWindowTitle),
+            FindClientSettings(process.MainWindowTitle)?.ExcludeFromCycle == true));
         var group = CycleGroup.FromOrderedTitles(
             availableClients,
             groupSettings.OrderedClientTitles,

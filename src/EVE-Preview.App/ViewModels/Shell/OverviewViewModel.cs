@@ -49,7 +49,6 @@ public sealed partial class OverviewViewModel : ObservableObject
         PreviewServiceState.Stopped => "预览关闭",
         PreviewServiceState.Starting => "服务正在启动",
         PreviewServiceState.Running => "预览运行中",
-        PreviewServiceState.Paused => "预览已暂停",
         PreviewServiceState.Stopping => "服务正在停止",
         PreviewServiceState.Faulted => "预览关闭",
         _ => throw new ArgumentOutOfRangeException()

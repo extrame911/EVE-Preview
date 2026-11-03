@@ -12,7 +12,7 @@ namespace EvePreview.App.Tests;
 public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
 {
     [Fact]
-    public void Stop_publishes_the_empty_snapshot_on_the_wpf_dispatcher()
+    public void Stop_publishes_a_preview_hidden_client_snapshot_on_the_wpf_dispatcher()
     {
         wpf.Invoke(async () =>
         {
@@ -26,18 +26,24 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
                 typeof(ClientPreviewRuntime)
                     .GetField("_started", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .SetValue(runtime, true);
+                typeof(ClientPreviewRuntime)
+                    .GetField("_previewsEnabled", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(runtime, true);
                 bool? publishedOnDispatcher = null;
-                runtime.SnapshotChanged += (_, snapshot) =>
+                runtime.SnapshotChanged += (_, _) =>
                 {
-                    if (snapshot.Clients.Count == 0)
+                    if (wpf.IsOnDispatcher)
                     {
-                        publishedOnDispatcher = wpf.IsOnDispatcher;
+                        publishedOnDispatcher = true;
                     }
                 };
 
                 await runtime.StopAsync();
 
                 Assert.True(publishedOnDispatcher);
+                var status = Assert.Single(runtime.CurrentSnapshot.Clients);
+                Assert.False(status.IsPreviewVisible);
+                Assert.Equal(0, runtime.CurrentSnapshot.PreviewWindowCount);
             }
             finally
             {
@@ -159,8 +165,8 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
                     process.ProcessId, process.MainWindowHandle, process.ProcessStartTime.ToUniversalTime());
 
                 typeof(ClientPreviewRuntime)
-                    .GetMethod("AddPreview", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(runtime, [new ClientSnapshot(identity, characterTitle), new[] { process }]);
+                    .GetMethod("ApplySnapshots", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(runtime, [new[] { process }]);
 
                 Assert.Collection(queue.Requests,
                     request => Assert.Equal(WindowOperationKind.Restore, request.Kind),
@@ -263,10 +269,14 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
             try
             {
                 var identity = AddPreview(runtime, settings, 1, 101, "EVE");
+                var knownClients = (Dictionary<ClientIdentity, ProcessSnapshot>)typeof(ClientPreviewRuntime)
+                    .GetField("_knownClients", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(runtime)!;
+                knownClients[identity] = knownClients[identity] with { MainWindowTitle = characterTitle };
 
                 typeof(ClientPreviewRuntime)
-                    .GetMethod("UpdatePreviewTitle", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(runtime, [new ClientSnapshot(identity, characterTitle)]);
+                    .GetMethod("UpdateClientTitle", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(runtime, [identity, "EVE", characterTitle]);
 
                 Assert.Collection(queue.Requests,
                     request => Assert.Equal(WindowOperationKind.Restore, request.Kind),
@@ -362,6 +372,10 @@ public sealed class ClientPreviewRuntimeLayoutTests(WpfApplicationFixture wpf)
             .GetField("_previews", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(runtime)!;
         previews.Add(preview.Identity, preview);
+        var knownClients = (Dictionary<ClientIdentity, ProcessSnapshot>)typeof(ClientPreviewRuntime)
+            .GetField("_knownClients", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(runtime)!;
+        knownClients[preview.Identity] = preview.Client;
         return preview.Identity;
     }
 

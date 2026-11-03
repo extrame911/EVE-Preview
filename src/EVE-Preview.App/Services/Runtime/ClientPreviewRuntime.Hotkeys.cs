@@ -40,13 +40,14 @@ public sealed partial class ClientPreviewRuntime
 
         foreach (var client in _settings.Clients.Where(client => !string.IsNullOrWhiteSpace(client.HotKey)))
         {
-            var preview = FindPreview(client.OriginalTitle);
-            if (preview is null)
+            var process = _knownClients.Values.FirstOrDefault(candidate =>
+                string.Equals(candidate.MainWindowTitle, client.OriginalTitle, StringComparison.OrdinalIgnoreCase));
+            if (process is null)
             {
                 continue;
             }
 
-            var identity = preview.Identity;
+            var identity = CreateIdentity(process);
             RegisterHotkey(
                 client.HotKey,
                 $"客户端 {client.OriginalTitle}",
@@ -95,11 +96,6 @@ public sealed partial class ClientPreviewRuntime
     private async Task RunOnUiAsync(CancellationToken cancellationToken, Func<Task> action)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_paused)
-        {
-            return;
-        }
-
         if (_dispatcher.CheckAccess())
         {
             await action();

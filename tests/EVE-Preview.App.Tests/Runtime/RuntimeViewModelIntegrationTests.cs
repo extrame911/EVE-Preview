@@ -201,8 +201,6 @@ public sealed class RuntimeViewModelIntegrationTests
         public event EventHandler<PreviewRuntimeSnapshot>? SnapshotChanged;
 
         public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task PauseAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task ResumeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task ApplySettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)

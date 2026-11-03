@@ -6,8 +6,6 @@ namespace EvePreview.App.Services;
 /// </summary>
 public interface IPreviewRuntime
 {
-    Task StartAsync(CancellationToken cancellationToken = default);
-    Task PauseAsync(CancellationToken cancellationToken = default);
-    Task ResumeAsync(CancellationToken cancellationToken = default);
-    Task StopAsync(CancellationToken cancellationToken = default);
+    public Task StartAsync(CancellationToken cancellationToken = default);
+    public Task StopAsync(CancellationToken cancellationToken = default);
 }

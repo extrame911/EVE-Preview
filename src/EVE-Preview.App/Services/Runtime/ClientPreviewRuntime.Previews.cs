@@ -134,13 +134,13 @@ public sealed partial class ClientPreviewRuntime
 
     private async Task ActivateClientCoreAsync(ClientIdentity identity, CancellationToken cancellationToken)
     {
-        if (!_previews.TryGetValue(identity, out var preview))
+        if (!_knownClients.TryGetValue(identity, out var client))
         {
             return;
         }
 
         var foreground = _windowQueue?.GetForegroundWindow() ?? 0;
-        if (foreground != 0 && !_previews.Values.Any(item => item.Client.MainWindowHandle == foreground))
+        if (foreground != 0 && !_knownClients.Values.Any(item => item.MainWindowHandle == foreground))
         {
             _previousForeignWindow = foreground;
             _previousForeignWindowProcessId = _windowQueue?.GetWindowProcessId(foreground) ?? 0;
@@ -149,8 +149,8 @@ public sealed partial class ClientPreviewRuntime
         var result = await EnqueueAndReportAsync(
             new WindowOperationRequest(
                 WindowOperationKind.Activate,
-                preview.Client.MainWindowHandle,
-                ExpectedProcessId: preview.Client.ProcessId),
+                client.MainWindowHandle,
+                ExpectedProcessId: client.ProcessId),
             cancellationToken);
         if (!result.Succeeded)
         {
@@ -173,16 +173,16 @@ public sealed partial class ClientPreviewRuntime
 
     private async Task MinimizeInactiveClientsAsync(ClientIdentity activeIdentity)
     {
-        foreach (var preview in _previews.Values.ToArray())
+        foreach (var client in _knownClients.Values.ToArray())
         {
-            if (preview.Identity != activeIdentity &&
-                _windowQueue?.IsMinimized(preview.Client.MainWindowHandle) != true)
+            if (CreateIdentity(client) != activeIdentity &&
+                _windowQueue?.IsMinimized(client.MainWindowHandle) != true)
             {
                 await EnqueueAndReportAsync(
                     new WindowOperationRequest(
                         WindowOperationKind.Minimize,
-                        preview.Client.MainWindowHandle,
-                        ExpectedProcessId: preview.Client.ProcessId),
+                        client.MainWindowHandle,
+                        ExpectedProcessId: client.ProcessId),
                     CancellationToken.None);
             }
         }
@@ -249,7 +249,7 @@ public sealed partial class ClientPreviewRuntime
 
     private async Task ExecuteForAllAsync(WindowOperationKind kind, CancellationToken cancellationToken)
     {
-        foreach (var preview in _previews.Values.ToArray())
+        foreach (var client in _knownClients.Values.ToArray())
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -257,7 +257,7 @@ public sealed partial class ClientPreviewRuntime
             }
 
             if (kind == WindowOperationKind.Minimize &&
-                _windowQueue?.IsMinimized(preview.Client.MainWindowHandle) == true)
+                _windowQueue?.IsMinimized(client.MainWindowHandle) == true)
             {
                 continue;
             }
@@ -265,28 +265,44 @@ public sealed partial class ClientPreviewRuntime
             await EnqueueAndReportAsync(
                 new WindowOperationRequest(
                     kind,
-                    preview.Client.MainWindowHandle,
-                    ExpectedProcessId: preview.Client.ProcessId),
+                    client.MainWindowHandle,
+                    ExpectedProcessId: client.ProcessId),
                 cancellationToken);
         }
     }
 
     private void RebuildPreviewWindows()
     {
-        var snapshots = _previews.Values.Select(preview => preview.Client).ToArray();
+        DisposePreviewWindows();
+        if (!_previewsEnabled)
+        {
+            PublishSnapshot(null);
+            return;
+        }
+
+        foreach (var process in _knownClients.Values.ToArray())
+        {
+            CreatePreview(process);
+        }
+
+        PublishSnapshot(null);
+    }
+
+    private void DisposePreviewWindows()
+    {
         foreach (var preview in _previews.Values)
         {
-            preview.Dispose();
+            try
+            {
+                preview.Dispose();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+            }
         }
 
         _previews.Clear();
         _defaultPreviewSlots.Clear();
-        foreach (var snapshot in snapshots)
-        {
-            CreatePreview(snapshot);
-        }
-
-        PublishSnapshot(null);
     }
 
     private void OnPreviewPlacementChanged(PreviewWindow preview, PreviewPlacement placement)

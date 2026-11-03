@@ -52,16 +52,19 @@ jobs:
           $notes = @'
           ## Changes
 
-          - Switched all version fields to three-part semantic versions; the fourth zero revision is no longer shown.
-          - Added the running application version after the build date in the bottom-right status bar.
-          - Kept the client window layout DPI fix that restores negative-coordinate windows to their exact saved size.
-          - Retained the state-aware preview start/stop button, always-visible Overview scrollbar, compact cards and grey "Preview off" status.
+          - Removed the unused pause/resume API and `Paused` service state.
+          - Separated the always-on client control plane from thumbnail rendering.
+          - Client hotkeys, cycle groups, window layouts and bulk window actions now use the client registry directly instead of depending on preview windows.
+          - Stopping previews now disposes only thumbnails and overlays; process discovery, hotkeys, cycle groups and the window-operation queue remain active.
+          - Starting previews again recreates thumbnails from the current client registry.
+          - Three-part version numbers and the status-bar version display remain in place.
 
           ## Verification
 
           - Release build with warnings treated as errors: passed.
-          - Automated tests: 320 passed, 0 failed.
+          - Automated tests: 321 passed, 0 failed.
           - DESIGN.md validation: passed locally.
+          - Verified cycle-group hotkey Ctrl+Q still activates an EVE client while thumbnails are stopped.
 
           ## Download
 

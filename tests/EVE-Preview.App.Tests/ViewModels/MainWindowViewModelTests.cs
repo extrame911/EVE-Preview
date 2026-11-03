@@ -122,8 +122,6 @@ public sealed class MainWindowViewModelTests
             return StartException is null ? Task.CompletedTask : Task.FromException(StartException);
         }
 
-        public Task PauseAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task ResumeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task StopAsync(CancellationToken cancellationToken = default)
         {
             StopCalls++;

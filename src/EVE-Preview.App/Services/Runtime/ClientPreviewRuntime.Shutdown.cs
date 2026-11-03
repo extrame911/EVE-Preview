@@ -83,7 +83,8 @@ public sealed partial class ClientPreviewRuntime
         }
 
         _uiResourcesDisposed = true;
-        _paused = true;
+        _started = false;
+        _previewsEnabled = false;
         foreach (var registration in _registrations)
         {
             try
@@ -117,6 +118,7 @@ public sealed partial class ClientPreviewRuntime
         }
 
         _previews.Clear();
+        _knownClients.Clear();
         _defaultPreviewSlots.Clear();
         _activeIdentity = null;
         try

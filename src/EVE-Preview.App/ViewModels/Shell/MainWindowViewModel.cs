@@ -211,10 +211,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 case PreviewServiceState.Running:
                     await StopPreviewAsync();
                     break;
-                case PreviewServiceState.Paused:
-                    await _runtime.ResumeAsync();
-                    Overview.ServiceState = PreviewServiceState.Running;
-                    break;
             }
         }
         catch (Exception exception)

@@ -82,7 +82,7 @@ public sealed partial class PreviewWindow
             ? _settings
             : WithClientPrivacy(_settings);
         _overlay.TitleSource = GetOverlayTitle();
-        var contentVisible = Visibility == Visibility.Visible && IsVisible && !_paused;
+        var contentVisible = Visibility == Visibility.Visible && IsVisible;
         _overlay.UpdateAppearance(
             effectiveSettings,
             _active,
@@ -116,7 +116,7 @@ public sealed partial class PreviewWindow
         _compactSurface.Update(
             compact,
             ParseBrush(compactColor, "#F3F6F8"),
-            _paused ? 0 : Math.Clamp(_settings.Display.Opacity, 0.1, 1.0));
+            Math.Clamp(_settings.Display.Opacity, 0.1, 1.0));
 
         if (_gdiTimer is not null)
         {
@@ -207,7 +207,7 @@ public sealed partial class PreviewWindow
 
     private async Task CaptureGdiFrameAsync()
     {
-        if (_disposed || _paused || _privacyActive || Visibility != Visibility.Visible ||
+        if (_disposed || _privacyActive || Visibility != Visibility.Visible ||
             Interlocked.Exchange(ref _gdiCaptureInFlight, 1) != 0)
         {
             return;
@@ -236,7 +236,7 @@ public sealed partial class PreviewWindow
                 }
             }).ConfigureAwait(true);
 
-            if (!_disposed && !_paused && !_privacyActive && Visibility == Visibility.Visible)
+            if (!_disposed && !_privacyActive && Visibility == Visibility.Visible)
             {
                 _gdiImage.Source = source;
             }

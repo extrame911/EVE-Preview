@@ -24,8 +24,8 @@ public sealed partial class PreviewWindow
         }
 
         Topmost = settings.Display.Topmost;
-        Opacity = _paused ? 0 : 1;
-        _gdiImage.Opacity = _paused ? 0 : Math.Clamp(settings.Display.Opacity, 0.1, 1.0);
+        Opacity = 1;
+        _gdiImage.Opacity = Math.Clamp(settings.Display.Opacity, 0.1, 1.0);
 
         var privacy = settings.Overlay.PrivacyMask || FindClientSettings()?.PrivacyMask == true;
         ApplyPrivacyMode(privacy);
@@ -40,17 +40,6 @@ public sealed partial class PreviewWindow
         RefreshVisibilityTimers();
         UpdateCompactState();
         UpdateThumbnailBounds();
-        UpdateLayoutForDisplay();
-        SyncOverlay();
-    }
-
-    public void SetPaused(bool paused)
-    {
-        _paused = paused;
-        Opacity = paused ? 0 : 1;
-        _gdiImage.Opacity = paused ? 0 : Math.Clamp(_settings.Display.Opacity, 0.1, 1.0);
-        UpdateCompactState();
-        IsHitTestVisible = !paused;
         UpdateLayoutForDisplay();
         SyncOverlay();
     }

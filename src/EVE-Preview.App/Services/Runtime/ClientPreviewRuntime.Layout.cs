@@ -38,22 +38,22 @@ public sealed partial class ClientPreviewRuntime
     private PixelRectangle? SaveClientWindowLayoutCore(string originalWindowTitle, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var preview = FindPreview(originalWindowTitle);
-        if (preview is null || _windowQueue is null)
+        var client = FindKnownClient(originalWindowTitle);
+        if (client is null || _windowQueue is null)
         {
             _lastError = "无法保存布局：客户端已离线。";
             PublishSnapshot(null);
             return null;
         }
 
-        if (_windowQueue.IsMinimized(preview.Client.MainWindowHandle))
+        if (_windowQueue.IsMinimized(client.MainWindowHandle))
         {
             _lastError = "最小化或已退出的客户端没有可保存的窗口布局。";
             PublishSnapshot(null);
             return null;
         }
 
-        if (!_windowQueue.TryGetWindowBounds(preview.Client.MainWindowHandle, out var bounds) ||
+        if (!_windowQueue.TryGetWindowBounds(client.MainWindowHandle, out var bounds) ||
             bounds.Width <= 0 || bounds.Height <= 0)
         {
             _lastError = "无法读取客户端窗口布局。";
@@ -73,12 +73,12 @@ public sealed partial class ClientPreviewRuntime
     {
         var savedLayouts = new Dictionary<string, PixelRectangle>(StringComparer.OrdinalIgnoreCase);
         var skippedCount = 0;
-        foreach (var preview in _previews.Values.ToArray())
+        foreach (var client in _knownClients.Values.ToArray())
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (_windowQueue is null ||
-                _windowQueue.IsMinimized(preview.Client.MainWindowHandle) ||
-                !_windowQueue.TryGetWindowBounds(preview.Client.MainWindowHandle, out var bounds) ||
+                _windowQueue.IsMinimized(client.MainWindowHandle) ||
+                !_windowQueue.TryGetWindowBounds(client.MainWindowHandle, out var bounds) ||
                 bounds.Width <= 0 || bounds.Height <= 0)
             {
                 skippedCount++;
@@ -86,8 +86,8 @@ public sealed partial class ClientPreviewRuntime
             }
 
             var saved = new PixelRectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height);
-            GetOrAddClientSettings(preview.Client.MainWindowTitle).ClientWindowBounds = saved;
-            savedLayouts[preview.Client.MainWindowTitle] = saved;
+            GetOrAddClientSettings(client.MainWindowTitle).ClientWindowBounds = saved;
+            savedLayouts[client.MainWindowTitle] = saved;
         }
 
         if (savedLayouts.Count > 0)
@@ -99,12 +99,12 @@ public sealed partial class ClientPreviewRuntime
 
     private void ApplySavedClientWindowLayoutOnLogin(ClientIdentity identity)
     {
-        if (!_previews.TryGetValue(identity, out var preview))
+        if (!_knownClients.TryGetValue(identity, out var client))
         {
             return;
         }
 
-        var title = preview.Client.MainWindowTitle;
+        var title = client.MainWindowTitle;
         if (ClientWindowTitle.IsLoginWindow(title) || FindClientSettings(title)?.ClientWindowBounds is null)
         {
             return;
@@ -147,9 +147,9 @@ public sealed partial class ClientPreviewRuntime
         string originalWindowTitle,
         CancellationToken cancellationToken)
     {
-        var preview = FindPreview(originalWindowTitle);
+        var client = FindKnownClient(originalWindowTitle);
         var clientSettings = FindClientSettings(originalWindowTitle);
-        if (preview is null || clientSettings?.ClientWindowBounds is null)
+        if (client is null || clientSettings?.ClientWindowBounds is null)
         {
             _lastError = "无法应用布局：客户端已离线或尚未保存布局。";
             PublishSnapshot(null);
@@ -160,8 +160,8 @@ public sealed partial class ClientPreviewRuntime
         var restored = await EnqueueAndReportAsync(
             new WindowOperationRequest(
                 WindowOperationKind.Restore,
-                preview.Client.MainWindowHandle,
-                ExpectedProcessId: preview.Client.ProcessId),
+                client.MainWindowHandle,
+                ExpectedProcessId: client.ProcessId),
             cancellationToken);
         if (!restored.Succeeded)
         {
@@ -171,9 +171,9 @@ public sealed partial class ClientPreviewRuntime
         var moved = await EnqueueAndReportAsync(
             new WindowOperationRequest(
                 WindowOperationKind.MoveResize,
-                preview.Client.MainWindowHandle,
+                client.MainWindowHandle,
                 new WindowBounds(saved.X, saved.Y, saved.Width, saved.Height),
-                ExpectedProcessId: preview.Client.ProcessId),
+                ExpectedProcessId: client.ProcessId),
             cancellationToken);
         if (!moved.Succeeded)
         {
@@ -181,10 +181,14 @@ public sealed partial class ClientPreviewRuntime
         }
 
         return await VerifySavedClientWindowBoundsAsync(
-            preview.Client.MainWindowHandle,
+            client.MainWindowHandle,
             saved,
             cancellationToken);
     }
+
+    private ProcessSnapshot? FindKnownClient(string originalWindowTitle) =>
+        _knownClients.Values.FirstOrDefault(client =>
+            string.Equals(client.MainWindowTitle, originalWindowTitle, StringComparison.OrdinalIgnoreCase));
 
     private async Task<bool> VerifySavedClientWindowBoundsAsync(
         nint windowHandle,
