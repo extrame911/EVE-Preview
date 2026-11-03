@@ -36,9 +36,14 @@ The only writes to EVE clients are permitted window-management operations: bring
 
 ## Download
 
-Download the latest single-file build from the [Releases](https://github.com/extrame911/EVE-Preview/releases) page.
+Download the latest builds from the [Releases](https://github.com/extrame911/EVE-Preview/releases) page.
 
-The single-file build is self-contained and runs as `EVE-Preview.exe`. The folder build contains the executable and its runtime dependencies.
+Each release provides two archives:
+
+- `EVE-Preview-folder.zip` — executable and runtime dependencies.
+- `EVE-Preview-single.zip` — self-contained single executable.
+
+Both are self-contained and run as `EVE-Preview.exe`. Verify the archives with `SHA256SUMS.txt`.
 
 ## Build and test
 

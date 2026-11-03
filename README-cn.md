@@ -36,9 +36,14 @@ EVE-Preview 只读取配置指定的客户端进程 ID、主窗口句柄、标�
 
 ## 下载
 
-请从 [Releases](https://github.com/extrame911/EVE-Preview/releases) 页面下载最新单文件版本。
+请从 [Releases](https://github.com/extrame911/EVE-Preview/releases) 页面下载最新版本。
 
-单文件版本为自包含程序，直接运行 `EVE-Preview.exe`。目录版本包含可执行文件和运行时依赖。
+每个版本提供两个压缩包：
+
+- `EVE-Preview-folder.zip`：可执行文件和运行时依赖。
+- `EVE-Preview-single.zip`：自包含单文件可执行程序。
+
+两者均为自包含程序，运行 `EVE-Preview.exe` 即可。请使用 `SHA256SUMS.txt` 校验压缩包。
 
 ## 构建与测试
 

@@ -35,14 +35,23 @@ jobs:
           Get-Content test-output.log -Tail 250 | Out-String | Add-Content $env:GITHUB_STEP_SUMMARY
           exit $testExitCode
 
-      - name: Publish single-file application
-        run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts
+      - name: Publish folder build
+        run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/folder
 
-      - name: Create checksum
+      - name: Publish single-file build
+        run: dotnet publish src/EVE-Preview.App/EVE-Preview.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/single
+
+      - name: Package release archives and checksums
         shell: pwsh
         run: |
-          $hash = (Get-FileHash artifacts/EVE-Preview.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -Path artifacts/SHA256SUMS.txt -Value "$hash *EVE-Preview.exe" -Encoding ascii
+          Compress-Archive -Path artifacts/folder/* -DestinationPath artifacts/EVE-Preview-folder.zip -CompressionLevel Optimal
+          Compress-Archive -Path artifacts/single/EVE-Preview.exe -DestinationPath artifacts/EVE-Preview-single.zip -CompressionLevel Optimal
+          $folderHash = (Get-FileHash artifacts/EVE-Preview-folder.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $singleHash = (Get-FileHash artifacts/EVE-Preview-single.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          @(
+            "$folderHash *EVE-Preview-folder.zip",
+            "$singleHash *EVE-Preview-single.zip"
+          ) | Set-Content -Path artifacts/SHA256SUMS.txt -Encoding ascii
 
       - name: Create GitHub Release
         shell: pwsh
@@ -52,12 +61,11 @@ jobs:
           $notes = @'
           ## Changes
 
-          - Removed the unused pause/resume API and `Paused` service state.
-          - Separated the always-on client control plane from thumbnail rendering.
-          - Client hotkeys, cycle groups, window layouts and bulk window actions now use the client registry directly instead of depending on preview windows.
-          - Stopping previews now disposes only thumbnails and overlays; process discovery, hotkeys, cycle groups and the window-operation queue remain active.
-          - Starting previews again recreates thumbnails from the current client registry.
-          - Three-part version numbers and the status-bar version display remain in place.
+          - Release assets now include both the self-contained folder build and the single-file build as ZIP archives.
+          - Added checksums for both release archives.
+          - Removed the pause/resume API and separated the always-on client control plane from thumbnail rendering.
+          - Client hotkeys, cycle groups, window layouts and bulk window actions now use the client registry directly.
+          - Stopping previews disposes only thumbnails and overlays while process discovery, hotkeys, cycle groups and the window-operation queue remain active.
 
           ## Verification
 
@@ -68,6 +76,10 @@ jobs:
 
           ## Download
 
-          `EVE-Preview.exe` is a self-contained Windows x64 single-file build. No .NET installation is required. Verify the download with `SHA256SUMS.txt`.
+          - `EVE-Preview-folder.zip`: folder build with runtime dependencies.
+          - `EVE-Preview-single.zip`: self-contained single-file build.
+          - `SHA256SUMS.txt`: SHA-256 checksums for both archives.
+
+          No .NET installation is required.
           '@
-          gh release create "$env:GITHUB_REF_NAME" --verify-tag --title "EVE-Preview $env:GITHUB_REF_NAME" --notes $notes artifacts/EVE-Preview.exe artifacts/SHA256SUMS.txt
+          gh release create "$env:GITHUB_REF_NAME" --verify-tag --title "EVE-Preview $env:GITHUB_REF_NAME" --notes $notes artifacts/EVE-Preview-folder.zip artifacts/EVE-Preview-single.zip artifacts/SHA256SUMS.txt
